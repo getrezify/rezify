@@ -1,8 +1,9 @@
 "use client";
 
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const tabs = [
   { href: "/dashboard", label: "Today", Icon: ClockIcon },
@@ -23,11 +24,83 @@ function formatHeaderDate(date: Date) {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [headerDate, setHeaderDate] = useState("");
+  const [authReady, setAuthReady] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const avatarLetter = userEmail ? userEmail[0].toUpperCase() : "?";
 
   useEffect(() => {
     setHeaderDate(formatHeaderDate(new Date()));
   }, []);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.replace("/");
+        return;
+      }
+
+      setUserEmail(session.user.email ?? "");
+      setAuthReady(true);
+    }
+
+    checkAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setAuthReady(false);
+        setUserEmail("");
+        setMenuOpen(false);
+        router.replace("/");
+      } else {
+        setUserEmail(session.user.email ?? "");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+    setMenuOpen(false);
+    await supabase.auth.signOut();
+    setIsSigningOut(false);
+    router.replace("/");
+  }
+
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent"
+          aria-hidden
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-background">
@@ -36,12 +109,48 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link href="/dashboard" className="font-display text-2xl text-accent">
             Rezify
           </Link>
-          <time
-            className="text-xs text-muted"
-            {...(headerDate ? { dateTime: new Date().toISOString() } : {})}
-          >
-            {headerDate}
-          </time>
+          <div className="flex items-center gap-3">
+            <time
+              className="text-xs text-muted"
+              {...(headerDate ? { dateTime: new Date().toISOString() } : {})}
+            >
+              {headerDate}
+            </time>
+
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                aria-label="Account menu"
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+              >
+                {avatarLetter}
+              </button>
+
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+                >
+                  <p className="truncate px-3 py-2 text-xs text-muted">
+                    {userEmail}
+                  </p>
+                  <div className="mx-2 border-t border-border" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="w-full px-3 py-2 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+                  >
+                    {isSigningOut ? "Signing out…" : "Sign Out"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
