@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  getBookingSourceBorderStyle,
+  isBookingSource,
+  SourceBadge,
+  type BookingSource,
+} from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
 import {
   useCallback,
@@ -18,8 +24,6 @@ type Property = {
   name: string;
 };
 
-type Source = "airbnb" | "booking" | "offline" | "owner";
-
 type UnitReservation = {
   id: string;
   guestName: string;
@@ -28,7 +32,7 @@ type UnitReservation = {
   nights: number;
   price: number;
   currency: "EGP" | "USD";
-  source: Source;
+  source: BookingSource;
 };
 
 type DayStatus = "check-in" | "check-out" | "booked" | "available";
@@ -45,27 +49,6 @@ type DbReservation = {
   properties?: { name: string } | null;
 };
 
-const SOURCE_LABELS: Record<Source, string> = {
-  airbnb: "Airbnb",
-  booking: "Booking.com",
-  offline: "Offline",
-  owner: "Owner",
-};
-
-const SOURCE_BORDER: Record<Source, string> = {
-  airbnb: "border-l-red-500",
-  booking: "border-l-blue-500",
-  offline: "border-l-emerald-500",
-  owner: "border-l-purple-500",
-};
-
-const SOURCE_DOT: Record<Source, string> = {
-  airbnb: "bg-red-500",
-  booking: "bg-blue-500",
-  offline: "bg-emerald-500",
-  owner: "bg-purple-500",
-};
-
 const inputClass =
   "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-text transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)]";
 
@@ -75,10 +58,6 @@ const selectClass =
 const labelClass = "mb-2 block text-sm font-medium text-text";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function isSource(value: string): value is Source {
-  return value in SOURCE_LABELS;
-}
 
 function getMonthOptions() {
   const options: { key: string; label: string }[] = [];
@@ -133,7 +112,7 @@ function calculateNights(checkIn: string, checkOut: string) {
 }
 
 function mapRow(row: DbReservation): UnitReservation | null {
-  if (!isSource(row.source)) return null;
+  if (!isBookingSource(row.source)) return null;
   return {
     id: row.id,
     guestName: row.guest_name,
@@ -630,7 +609,8 @@ export default function UnitsPage() {
                       .map((r) => (
                         <li
                           key={r.id}
-                          className={`rounded-xl border border-border border-l-4 bg-surface px-4 py-3 ${SOURCE_BORDER[r.source]}`}
+                          className="rounded-xl border border-border border-l-4 bg-surface px-4 py-3"
+                          style={getBookingSourceBorderStyle(r.source)}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -661,12 +641,7 @@ export default function UnitsPage() {
                               {r.nights === 1 ? "night" : "nights"}
                             </span>
                             <span>·</span>
-                            <span className="inline-flex items-center gap-1.5">
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${SOURCE_DOT[r.source]}`}
-                              />
-                              {SOURCE_LABELS[r.source]}
-                            </span>
+                            <SourceBadge source={r.source} size="sm" />
                           </div>
                         </li>
                       ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { BOOKING_SOURCE_LIST, type BookingSource } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -10,14 +11,7 @@ type Property = {
   name: string;
 };
 
-const BOOKING_SOURCES = [
-  { id: "airbnb", emoji: "✈", label: "Airbnb" },
-  { id: "booking", emoji: "🏨", label: "Booking.com" },
-  { id: "offline", emoji: "🤝", label: "Offline" },
-  { id: "owner", emoji: "👤", label: "Owner" },
-] as const;
-
-type BookingSourceId = (typeof BOOKING_SOURCES)[number]["id"];
+type BookingSourceId = BookingSource;
 type Currency = "EGP" | "USD";
 
 type ConflictingReservation = {
@@ -466,20 +460,21 @@ export default function AddReservationPage() {
         <fieldset className="animate-fade-up [animation-delay:150ms]">
           <legend className={labelClass}>Booking Source</legend>
           <div className="grid grid-cols-2 gap-2">
-            {BOOKING_SOURCES.map(({ id, emoji, label }) => {
+            {BOOKING_SOURCE_LIST.map(({ id, icon, label, bg }) => {
               const selected = source === id;
               return (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setSource(id)}
-                  className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3.5 text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3.5 text-sm font-semibold transition-all duration-200 ${
                     selected
-                      ? "border-accent bg-[var(--accent-muted)] text-accent"
+                      ? "border-transparent text-white shadow-md"
                       : "border-border bg-surface text-text hover:border-muted"
                   }`}
+                  style={selected ? { backgroundColor: bg } : undefined}
                 >
-                  <span aria-hidden>{emoji}</span>
+                  <span aria-hidden>{icon}</span>
                   {label}
                 </button>
               );

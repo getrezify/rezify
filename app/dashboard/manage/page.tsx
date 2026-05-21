@@ -1,5 +1,6 @@
 "use client";
 
+import { isBookingSource, SourceBadge, type BookingSource } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
 import {
   useCallback,
@@ -14,7 +15,6 @@ import { createPortal } from "react-dom";
 const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 type Currency = "EGP" | "USD";
-type Source = "airbnb" | "booking" | "offline" | "owner";
 
 type Reservation = {
   id: string;
@@ -24,7 +24,8 @@ type Reservation = {
   checkOut: string;
   price: string;
   currency: Currency;
-  source: string;
+  sourceId: BookingSource | null;
+  sourceLabel: string;
 };
 
 type DbReservation = {
@@ -39,24 +40,14 @@ type DbReservation = {
   properties?: { name: string } | null;
 };
 
-const SOURCE_LABELS: Record<Source, string> = {
-  airbnb: "Airbnb",
-  booking: "Booking.com",
-  offline: "Offline",
-  owner: "Owner",
-};
-
 const inputClass =
   "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-text transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)]";
 
 const labelClass = "mb-2 block text-sm font-medium text-text";
 
-function isSource(value: string): value is Source {
-  return value in SOURCE_LABELS;
-}
-
 function mapRow(row: DbReservation): Reservation {
   const currency = row.currency === "USD" ? "USD" : "EGP";
+  const sourceId = isBookingSource(row.source) ? row.source : null;
   return {
     id: row.id,
     unitName: row.properties?.name ?? "—",
@@ -65,7 +56,8 @@ function mapRow(row: DbReservation): Reservation {
     checkOut: row.check_out,
     price: String(row.total_price),
     currency,
-    source: isSource(row.source) ? SOURCE_LABELS[row.source] : row.source,
+    sourceId,
+    sourceLabel: row.source,
   };
 }
 
@@ -457,7 +449,18 @@ export default function ManageReservationPage() {
                     reservation.currency,
                   )}
                 />
-                <InfoBox label="Source" value={reservation.source} />
+                <div className="rounded-lg border border-border bg-background px-3 py-2.5">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+                    Source
+                  </p>
+                  <div className="mt-1.5">
+                    {reservation.sourceId ? (
+                      <SourceBadge source={reservation.sourceId} size="sm" />
+                    ) : (
+                      <p className="text-sm text-text">{reservation.sourceLabel}</p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2">

@@ -1,11 +1,16 @@
 "use client";
 
+import {
+  BOOKING_SOURCE_LIST,
+  getBookingSourceBorderStyle,
+  isBookingSource,
+  SourceBadge,
+  type BookingSource,
+} from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
-
-type Source = "airbnb" | "booking" | "offline" | "owner";
 
 type HistoryReservation = {
   id: string;
@@ -16,7 +21,7 @@ type HistoryReservation = {
   nights: number;
   price: number;
   currency: "EGP" | "USD";
-  source: Source;
+  source: BookingSource;
   createdAt: string;
 };
 
@@ -32,33 +37,8 @@ type DbReservation = {
   units?: { name: string } | null;
 };
 
-const SOURCE_LABELS: Record<Source, string> = {
-  airbnb: "Airbnb",
-  booking: "Booking.com",
-  offline: "Offline",
-  owner: "Owner",
-};
-
-const SOURCE_BORDER: Record<Source, string> = {
-  airbnb: "border-l-red-500",
-  booking: "border-l-blue-500",
-  offline: "border-l-emerald-500",
-  owner: "border-l-purple-500",
-};
-
-const SOURCE_DOT: Record<Source, string> = {
-  airbnb: "bg-red-500",
-  booking: "bg-blue-500",
-  offline: "bg-emerald-500",
-  owner: "bg-purple-500",
-};
-
 const selectClass =
   "w-full appearance-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text transition-colors focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)] [color-scheme:dark]";
-
-function isSource(value: string): value is Source {
-  return value in SOURCE_LABELS;
-}
 
 function calculateNights(checkIn: string, checkOut: string) {
   const start = new Date(`${checkIn}T12:00:00`);
@@ -70,7 +50,7 @@ function calculateNights(checkIn: string, checkOut: string) {
 }
 
 function mapReservation(row: DbReservation): HistoryReservation | null {
-  if (!isSource(row.source)) return null;
+  if (!isBookingSource(row.source)) return null;
   const currency = row.currency === "USD" ? "USD" : "EGP";
 
   return {
@@ -284,9 +264,9 @@ export default function HistoryPage() {
             disabled={isLoading}
           >
             <option value="all">All sources</option>
-            {(Object.keys(SOURCE_LABELS) as Source[]).map((src) => (
-              <option key={src} value={src}>
-                {SOURCE_LABELS[src]}
+            {BOOKING_SOURCE_LIST.map((src) => (
+              <option key={src.id} value={src.id}>
+                {src.label}
               </option>
             ))}
           </select>
@@ -358,7 +338,8 @@ export default function HistoryPage() {
                 {group.reservations.map((r) => (
                   <li
                     key={r.id}
-                    className={`rounded-xl border border-border border-l-4 bg-surface px-4 py-3 ${SOURCE_BORDER[r.source]}`}
+                    className="rounded-xl border border-border border-l-4 bg-surface px-4 py-3"
+                    style={getBookingSourceBorderStyle(r.source)}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -382,12 +363,7 @@ export default function HistoryPage() {
                         {r.nights} {r.nights === 1 ? "night" : "nights"}
                       </span>
                       <span>·</span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${SOURCE_DOT[r.source]}`}
-                        />
-                        {SOURCE_LABELS[r.source]}
-                      </span>
+                      <SourceBadge source={r.source} size="sm" />
                     </div>
                   </li>
                 ))}

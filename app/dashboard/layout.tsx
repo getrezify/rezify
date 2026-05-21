@@ -12,6 +12,7 @@ const tabs = [
   { href: "/dashboard/manage", label: "Manage", Icon: EditIcon },
   { href: "/dashboard/history", label: "History", Icon: HistoryIcon },
   { href: "/dashboard/units", label: "Units", Icon: GridIcon },
+  { href: "/dashboard/calendar", label: "Calendar", Icon: CalendarGridIcon },
 ] as const;
 
 function formatHeaderDate(date: Date) {
@@ -157,7 +158,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2">{children}</main>
 
       <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-border bg-surface/95 backdrop-blur-sm">
-        <ul className="flex items-stretch justify-around px-1 py-2">
+        <ul className="flex items-stretch justify-around overflow-x-auto px-0.5 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map(({ href, label, Icon }) => {
             const isActive =
               href === "/dashboard"
@@ -168,7 +169,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <li key={href} className="flex-1">
                 <Link
                   href={href}
-                  className={`flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors ${
+                  className={`flex min-w-[3.25rem] flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium transition-colors sm:text-[10px] ${
                     isActive ? "text-accent" : "text-muted hover:text-text"
                   }`}
                 >
@@ -239,6 +240,19 @@ function GridIcon({ className }: { className?: string }) {
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
       <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+function CalendarGridIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="3" y="5" width="2.5" height="14" rx="0.5" opacity="0.35" />
+      <rect x="6.5" y="5" width="2.5" height="14" rx="0.5" opacity="0.5" />
+      <rect x="10" y="5" width="2.5" height="14" rx="0.5" opacity="0.65" />
+      <rect x="13.5" y="5" width="2.5" height="14" rx="0.5" opacity="0.8" />
+      <rect x="17" y="5" width="2.5" height="14" rx="0.5" />
+      <rect x="20.5" y="5" width="0.5" height="14" rx="0.25" opacity="0.25" />
     </svg>
   );
 }
