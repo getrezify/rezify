@@ -1,48 +1,94 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 type StayCard = {
+  id: string;
   unitName: string;
   guestName: string;
   nightsInfo: string;
 };
 
-const mockCheckIns: StayCard[] = [
-  {
-    unitName: "Bay Tower 3C",
-    guestName: "Fatima Al-Rashid",
-    nightsInfo: "4 nights · Check-in 4:00 PM",
-  },
-  {
-    unitName: "Old Town Suite 5",
-    guestName: "David Chen",
-    nightsInfo: "2 nights · Check-in 3:00 PM",
-  },
-  {
-    unitName: "Harbor House 8",
-    guestName: "Amira Khalil",
-    nightsInfo: "6 nights · Check-in 2:00 PM",
-  },
-];
+type DbReservation = {
+  id: string;
+  guest_name: string;
+  check_in: string;
+  check_out: string;
+  units?: { name: string } | null;
+};
 
-const mockCheckOuts: StayCard[] = [
-  {
-    unitName: "Marina View 4B",
-    guestName: "Sarah Al-Mansouri",
-    nightsInfo: "3 nights · Check-out 11:00 AM",
-  },
-  {
-    unitName: "Palm Heights 12",
-    guestName: "James Okonkwo",
-    nightsInfo: "5 nights · Check-out 10:00 AM",
-  },
-];
+function getTomorrowISO() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
-function getTomorrow() {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  return date;
+function getTomorrowDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
+function calculateNights(checkIn: string, checkOut: string) {
+  const start = new Date(`${checkIn}T12:00:00`);
+  const end = new Date(`${checkOut}T12:00:00`);
+  const nights = Math.round(
+    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  return nights > 0 ? nights : 0;
+}
+
+function mapToStayCard(row: DbReservation, nightsInfo: string): StayCard {
+  return {
+    id: row.id,
+    unitName: row.units?.name ?? "—",
+    guestName: row.guest_name,
+    nightsInfo,
+  };
+}
+
+async function fetchCheckIns(date: string) {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*, units(name)")
+    .eq("workspace_id", WORKSPACE_ID)
+    .eq("check_in", date);
+
+  if (!error) return (data ?? []) as DbReservation[];
+
+  const fallback = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("workspace_id", WORKSPACE_ID)
+    .eq("check_in", date);
+
+  if (fallback.error) throw new Error(fallback.error.message);
+  return (fallback.data ?? []) as DbReservation[];
+}
+
+async function fetchCheckOuts(date: string) {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*, units(name)")
+    .eq("workspace_id", WORKSPACE_ID)
+    .eq("check_out", date);
+
+  if (!error) return (data ?? []) as DbReservation[];
+
+  const fallback = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("workspace_id", WORKSPACE_ID)
+    .eq("check_out", date);
+
+  if (fallback.error) throw new Error(fallback.error.message);
+  return (fallback.data ?? []) as DbReservation[];
 }
 
 function formatFullDate(date: Date) {
@@ -56,13 +102,64 @@ function formatFullDate(date: Date) {
 
 export default function TomorrowPage() {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [checkIns, setCheckIns] = useState<StayCard[]>([]);
+  const [checkOuts, setCheckOuts] = useState<StayCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const tomorrowLabel = useMemo(
-    () => formatFullDate(getTomorrow()),
+    () => formatFullDate(getTomorrowDate()),
     [refreshKey],
   );
 
+  const loadBriefing = useCallback(async () => {
+    setIsLoading(true);
+    setFetchError(null);
+
+    const tomorrow = getTomorrowISO();
+
+    try {
+      const [checkInRows, checkOutRows] = await Promise.all([
+        fetchCheckIns(tomorrow),
+        fetchCheckOuts(tomorrow),
+      ]);
+
+      setCheckIns(
+        checkInRows.map((row) => {
+          const nights = calculateNights(row.check_in, row.check_out);
+          return mapToStayCard(
+            row,
+            `${nights} ${nights === 1 ? "night" : "nights"} · Check-in tomorrow`,
+          );
+        }),
+      );
+
+      setCheckOuts(
+        checkOutRows.map((row) => {
+          const nights = calculateNights(row.check_in, row.check_out);
+          return mapToStayCard(
+            row,
+            `${nights} ${nights === 1 ? "night" : "nights"} · Check-out tomorrow`,
+          );
+        }),
+      );
+    } catch (err) {
+      setFetchError(
+        err instanceof Error ? err.message : "Failed to load briefing",
+      );
+      setCheckIns([]);
+      setCheckOuts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBriefing();
+  }, [loadBriefing, refreshKey]);
+
   return (
-    <div key={refreshKey} className="animate-fade-up space-y-8 pb-4">
+    <div className="animate-fade-up space-y-8 pb-4">
       <header className="flex items-start justify-between gap-4 pt-4">
         <div>
           <h1 className="font-display text-3xl text-text">Tomorrow</h1>
@@ -71,31 +168,48 @@ export default function TomorrowPage() {
         <button
           type="button"
           onClick={() => setRefreshKey((k) => k + 1)}
-          className="shrink-0 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-text transition-colors hover:border-accent hover:text-accent"
+          disabled={isLoading}
+          className="shrink-0 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-text transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
         >
           Refresh
         </button>
       </header>
 
-      <BriefingSection
-        title="Check-ins"
-        dotClassName="bg-emerald-500"
-        badgeClassName="bg-emerald-500/15 text-emerald-400"
-        borderClassName="border-l-emerald-500"
-        items={mockCheckIns}
-        emptyEmoji="📭"
-        emptyMessage="No check-ins scheduled for tomorrow"
-      />
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <div
+            className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent"
+            aria-hidden
+          />
+          <p className="mt-3 text-sm text-muted">Loading tomorrow&apos;s briefing…</p>
+        </div>
+      ) : fetchError ? (
+        <div className="rounded-xl border border-dashed border-red-500/40 bg-red-500/10 px-4 py-10 text-center">
+          <p className="text-sm text-red-300">{fetchError}</p>
+        </div>
+      ) : (
+        <>
+          <BriefingSection
+            title="Check-ins"
+            dotClassName="bg-emerald-500"
+            badgeClassName="bg-emerald-500/15 text-emerald-400"
+            borderClassName="border-l-emerald-500"
+            items={checkIns}
+            emptyEmoji="📭"
+            emptyMessage="No check-ins scheduled for tomorrow"
+          />
 
-      <BriefingSection
-        title="Check-outs"
-        dotClassName="bg-red-500"
-        badgeClassName="bg-red-500/15 text-red-400"
-        borderClassName="border-l-red-500"
-        items={mockCheckOuts}
-        emptyEmoji="🧳"
-        emptyMessage="No check-outs scheduled for tomorrow"
-      />
+          <BriefingSection
+            title="Check-outs"
+            dotClassName="bg-red-500"
+            badgeClassName="bg-red-500/15 text-red-400"
+            borderClassName="border-l-red-500"
+            items={checkOuts}
+            emptyEmoji="🧳"
+            emptyMessage="No check-outs scheduled for tomorrow"
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -140,7 +254,7 @@ function BriefingSection({
         <ul className="space-y-2">
           {items.map((item) => (
             <li
-              key={`${title}-${item.unitName}`}
+              key={item.id}
               className={`rounded-xl border border-border border-l-4 bg-surface px-4 py-3 ${borderClassName}`}
             >
               <p className="font-semibold text-text">{item.unitName}</p>

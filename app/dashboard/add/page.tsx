@@ -1,21 +1,14 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
-const MOCK_UNITS = [
-  "Marina View 4B",
-  "Palm Heights 12",
-  "Downtown Studio 7",
-  "Creek Villa 2",
-  "Skyline Loft 9",
-  "Garden Flat 1A",
-  "Bay Tower 3C",
-  "Old Town Suite 5",
-  "Harbor House 8",
-];
+type Property = {
+  id: string;
+  name: string;
+};
 
 const BOOKING_SOURCES = [
   { id: "airbnb", emoji: "✈", label: "Airbnb" },
@@ -27,10 +20,33 @@ const BOOKING_SOURCES = [
 type BookingSourceId = (typeof BOOKING_SOURCES)[number]["id"];
 type Currency = "EGP" | "USD";
 
+type ConflictingReservation = {
+  unitName: string;
+  guestName: string;
+  checkIn: string;
+  checkOut: string;
+};
+
+type DbConflictRow = {
+  guest_name: string;
+  check_in: string;
+  check_out: string;
+  status?: string | null;
+  properties?: { name: string } | null;
+};
+
 const inputClass =
   "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-text transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)]";
 
 const labelClass = "mb-2 block text-sm font-medium text-text";
+
+function formatDisplayDate(iso: string) {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 function calculateNights(checkIn: string, checkOut: string): number | null {
   if (!checkIn || !checkOut) return null;
@@ -45,8 +61,9 @@ function calculateNights(checkIn: string, checkOut: string): number | null {
 export default function AddReservationPage() {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [properties, setProperties] = useState<Property[]>([]);
   const [unitQuery, setUnitQuery] = useState("");
-  const [selectedUnit, setSelectedUnit] = useState("");
+  const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [unitOpen, setUnitOpen] = useState(false);
   const [source, setSource] = useState<BookingSourceId>("airbnb");
   const [guestName, setGuestName] = useState("");
@@ -57,6 +74,9 @@ export default function AddReservationPage() {
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [conflict, setConflict] = useState<ConflictingReservation | null>(
+    null,
+  );
 
   const unitRef = useRef<HTMLDivElement>(null);
 
@@ -65,11 +85,37 @@ export default function AddReservationPage() {
     [checkIn, checkOut],
   );
 
-  const filteredUnits = useMemo(() => {
+  const filteredProperties = useMemo(() => {
     const q = unitQuery.trim().toLowerCase();
-    if (!q) return MOCK_UNITS;
-    return MOCK_UNITS.filter((unit) => unit.toLowerCase().includes(q));
-  }, [unitQuery]);
+    if (!q) return properties;
+    return properties.filter((p) => p.name.toLowerCase().includes(q));
+  }, [unitQuery, properties]);
+
+  const loadProperties = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("properties")
+      .select("id, name")
+      .eq("workspace_id", WORKSPACE_ID)
+      .order("name");
+
+    if (error || !data) {
+      setProperties([]);
+      return;
+    }
+
+    setProperties(
+      data
+        .map((row) => ({
+          id: row.id as string,
+          name: row.name as string,
+        }))
+        .filter((p) => p.name?.trim()),
+    );
+  }, []);
+
+  useEffect(() => {
+    loadProperties();
+  }, [loadProperties]);
 
   useEffect(() => {
     if (!unitOpen) return;
@@ -98,9 +144,20 @@ export default function AddReservationPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  function handleSelectUnit(unit: string) {
-    setSelectedUnit(unit);
-    setUnitQuery(unit);
+  useEffect(() => {
+    if (!conflict) return;
+
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setConflict(null);
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [conflict]);
+
+  function handleSelectProperty(property: Property) {
+    setSelectedPropertyId(property.id);
+    setUnitQuery(property.name);
     setUnitOpen(false);
   }
 
@@ -108,21 +165,73 @@ export default function AddReservationPage() {
     setCheckIn("");
     setCheckOut("");
     setUnitQuery("");
-    setSelectedUnit("");
+    setSelectedPropertyId("");
     setSource("airbnb");
     setGuestName("");
     setTotalPrice("");
     setCurrency("EGP");
     setUnitOpen(false);
+    setConflict(null);
   }
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setIsSaving(true);
-    setToast(null);
+  function resolvePropertyId() {
+    return (
+      selectedPropertyId ||
+      properties.find((p) => p.name === unitQuery.trim())?.id
+    );
+  }
 
+  async function findConflict(
+    propertyId: string,
+  ): Promise<ConflictingReservation | null> {
+    const { data, error } = await supabase
+      .from("reservations")
+      .select("guest_name, check_in, check_out, status, properties(name)")
+      .eq("workspace_id", WORKSPACE_ID)
+      .eq("property_id", propertyId)
+      .or("status.neq.cancelled,status.is.null")
+      .lt("check_in", checkOut)
+      .gt("check_out", checkIn)
+      .limit(1);
+
+    if (error) {
+      const fallback = await supabase
+        .from("reservations")
+        .select("guest_name, check_in, check_out, status")
+        .eq("workspace_id", WORKSPACE_ID)
+        .eq("property_id", propertyId)
+        .or("status.neq.cancelled,status.is.null")
+        .lt("check_in", checkOut)
+        .gt("check_out", checkIn)
+        .limit(1);
+
+      if (fallback.error || !fallback.data?.length) return null;
+
+      const row = fallback.data[0] as unknown as DbConflictRow;
+      return {
+        unitName:
+          properties.find((p) => p.id === propertyId)?.name ?? unitQuery.trim(),
+        guestName: row.guest_name,
+        checkIn: row.check_in,
+        checkOut: row.check_out,
+      };
+    }
+
+    if (!data?.length) return null;
+
+    const row = data[0] as unknown as DbConflictRow;
+    return {
+      unitName: row.properties?.name ?? unitQuery.trim(),
+      guestName: row.guest_name,
+      checkIn: row.check_in,
+      checkOut: row.check_out,
+    };
+  }
+
+  async function insertReservation(propertyId: string) {
     const { error } = await supabase.from("reservations").insert({
       workspace_id: WORKSPACE_ID,
+      property_id: propertyId,
       guest_name: guestName.trim(),
       source,
       check_in: checkIn,
@@ -131,22 +240,121 @@ export default function AddReservationPage() {
       currency,
     });
 
-    setIsSaving(false);
-
     if (error) {
       setToast({
         message: error.message || "Failed to save reservation",
         type: "error",
       });
-      return;
+      return false;
     }
 
     setToast({ message: "Reservation saved!", type: "success" });
     clearForm();
+    return true;
+  }
+
+  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setToast(null);
+    setConflict(null);
+
+    const propertyId = resolvePropertyId();
+
+    if (!propertyId) {
+      setToast({ message: "Please select a unit", type: "error" });
+      return;
+    }
+
+    if (!checkIn || !checkOut) {
+      setToast({ message: "Please select check-in and check-out dates", type: "error" });
+      return;
+    }
+
+    if (calculateNights(checkIn, checkOut) === null) {
+      setToast({ message: "Check-out must be after check-in", type: "error" });
+      return;
+    }
+
+    setIsSaving(true);
+
+    const existing = await findConflict(propertyId);
+    if (existing) {
+      setIsSaving(false);
+      setConflict(existing);
+      return;
+    }
+
+    await insertReservation(propertyId);
+    setIsSaving(false);
+  }
+
+  async function handleSaveAnyway() {
+    const propertyId = resolvePropertyId();
+    if (!propertyId) return;
+
+    setIsSaving(true);
+    setConflict(null);
+    await insertReservation(propertyId);
+    setIsSaving(false);
   }
 
   return (
     <div className="animate-fade-up relative pb-6">
+      {conflict && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="conflict-title"
+        >
+          <div className="w-full max-w-[400px] rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+            <div className="flex flex-col items-center text-center">
+              <span
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/15 text-2xl text-red-400"
+                aria-hidden
+              >
+                ⚠
+              </span>
+              <h2
+                id="conflict-title"
+                className="mt-4 font-display text-xl text-text"
+              >
+                Reservation Already Exists
+              </h2>
+              <p className="mt-3 text-sm text-muted">
+                This unit already has a booking that overlaps your dates:
+              </p>
+              <div className="mt-4 w-full rounded-xl border border-border bg-background px-4 py-3 text-left">
+                <p className="font-semibold text-text">{conflict.unitName}</p>
+                <p className="mt-0.5 text-sm text-muted">{conflict.guestName}</p>
+                <p className="mt-2 text-sm text-text">
+                  {formatDisplayDate(conflict.checkIn)} –{" "}
+                  {formatDisplayDate(conflict.checkOut)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setConflict(null)}
+                disabled={isSaving}
+                className="rounded-lg border border-border py-2.5 text-sm font-semibold text-text transition-colors hover:border-muted disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAnyway}
+                disabled={isSaving}
+                className="rounded-lg bg-accent py-2.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover disabled:opacity-60"
+              >
+                {isSaving ? "Saving…" : "Save Anyway"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div
           role="status"
@@ -221,7 +429,7 @@ export default function AddReservationPage() {
             aria-haspopup="listbox"
             onChange={(e) => {
               setUnitQuery(e.target.value);
-              setSelectedUnit("");
+              setSelectedPropertyId("");
               setUnitOpen(true);
             }}
             onFocus={() => setUnitOpen(true)}
@@ -232,21 +440,21 @@ export default function AddReservationPage() {
               role="listbox"
               className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl"
             >
-              {filteredUnits.length === 0 ? (
+              {filteredProperties.length === 0 ? (
                 <li className="px-4 py-3 text-sm text-muted">No units found</li>
               ) : (
-                filteredUnits.map((unit) => (
-                  <li key={unit}>
+                filteredProperties.map((property) => (
+                  <li key={property.id}>
                     <button
                       type="button"
-                      onClick={() => handleSelectUnit(unit)}
+                      onClick={() => handleSelectProperty(property)}
                       className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-background ${
-                        selectedUnit === unit
+                        selectedPropertyId === property.id
                           ? "bg-[var(--accent-muted)] text-accent"
                           : "text-text"
                       }`}
                     >
-                      {unit}
+                      {property.name}
                     </button>
                   </li>
                 ))
