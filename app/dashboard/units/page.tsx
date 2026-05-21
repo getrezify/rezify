@@ -39,6 +39,7 @@ type DayStatus = "check-in" | "check-out" | "booked" | "available";
 
 type DbReservation = {
   id: string;
+  property_id?: string;
   guest_name: string;
   source: string;
   check_in: string;
@@ -47,6 +48,27 @@ type DbReservation = {
   currency: string;
   status?: string | null;
   properties?: { name: string } | null;
+};
+
+type PortfolioReservation = UnitReservation & {
+  propertyId: string;
+};
+
+type UnitPortfolioRow = {
+  propertyId: string;
+  name: string;
+  bookings: number;
+  egp: number;
+  usd: number;
+  occupancy: number;
+};
+
+type PortfolioSummary = {
+  egp: number;
+  usd: number;
+  occupancy: number;
+  bookings: number;
+  unitRows: UnitPortfolioRow[];
 };
 
 const inputClass =
@@ -180,6 +202,77 @@ function buildDayStatusMap(
   return map;
 }
 
+function getCurrentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthLabelFromKey(monthKey: string) {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function mapPortfolioRow(row: DbReservation): PortfolioReservation | null {
+  const base = mapRow(row);
+  if (!base || !row.property_id) return null;
+  return { ...base, propertyId: row.property_id };
+}
+
+function computePortfolio(
+  properties: Property[],
+  reservations: PortfolioReservation[],
+  monthKey: string,
+): PortfolioSummary {
+  const byProperty = new Map<string, PortfolioReservation[]>();
+
+  for (const r of reservations) {
+    const list = byProperty.get(r.propertyId) ?? [];
+    list.push(r);
+    byProperty.set(r.propertyId, list);
+  }
+
+  const unitRows: UnitPortfolioRow[] = properties.map((property) => {
+    const unitReservations = byProperty.get(property.id) ?? [];
+    const kpis = computeKpis(unitReservations, monthKey);
+    return {
+      propertyId: property.id,
+      name: property.name,
+      bookings: kpis.bookings,
+      egp: kpis.egp,
+      usd: kpis.usd,
+      occupancy: kpis.occupancy,
+    };
+  });
+
+  unitRows.sort((a, b) => {
+    if (b.egp !== a.egp) return b.egp - a.egp;
+    if (b.usd !== a.usd) return b.usd - a.usd;
+    return b.bookings - a.bookings;
+  });
+
+  let egp = 0;
+  let usd = 0;
+  let bookings = 0;
+  let occupancySum = 0;
+
+  for (const row of unitRows) {
+    egp += row.egp;
+    usd += row.usd;
+    bookings += row.bookings;
+    occupancySum += row.occupancy;
+  }
+
+  const occupancy =
+    properties.length > 0
+      ? Math.round(occupancySum / properties.length)
+      : 0;
+
+  return { egp, usd, occupancy, bookings, unitRows };
+}
+
 function computeKpis(reservations: UnitReservation[], monthKey: string) {
   const { daysInMonth } = getMonthBounds(monthKey);
 
@@ -221,6 +314,11 @@ function dayCellClass(status: DayStatus) {
 export default function UnitsPage() {
   const monthOptions = useMemo(() => getMonthOptions(), []);
   const defaultMonth = monthOptions[0]?.key ?? "";
+  const portfolioMonthKey = useMemo(() => getCurrentMonthKey(), []);
+  const portfolioMonthLabel = useMemo(
+    () => formatMonthLabelFromKey(portfolioMonthKey),
+    [portfolioMonthKey],
+  );
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [unitQuery, setUnitQuery] = useState("");
@@ -230,6 +328,8 @@ export default function UnitsPage() {
   const [monthKey, setMonthKey] = useState(defaultMonth);
   const [isViewed, setIsViewed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [viewKey, setViewKey] = useState(0);
   const [reservations, setReservations] = useState<UnitReservation[]>([]);
   const [displayPropertyName, setDisplayPropertyName] = useState("");
@@ -274,18 +374,51 @@ export default function UnitsPage() {
 
     if (error || !data) {
       setProperties([]);
-      return;
+      return [];
     }
 
-    setProperties(
-      data
-        .map((row) => ({
-          id: row.id as string,
-          name: row.name as string,
-        }))
-        .filter((p) => p.name?.trim()),
-    );
+    const list = data
+      .map((row) => ({
+        id: row.id as string,
+        name: row.name as string,
+      }))
+      .filter((p) => p.name?.trim());
+
+    setProperties(list);
+    return list;
   }, []);
+
+  const loadPortfolio = useCallback(
+    async (propertyList: Property[], month: string) => {
+      setPortfolioLoading(true);
+
+      const { monthStart, nextMonth } = getMonthBounds(month);
+
+      const { data, error } = await supabase
+        .from("reservations")
+        .select(
+          "id, property_id, guest_name, source, check_in, check_out, total_price, currency, status",
+        )
+        .eq("workspace_id", WORKSPACE_ID)
+        .or("status.neq.cancelled,status.is.null")
+        .lt("check_in", nextMonth)
+        .gt("check_out", monthStart);
+
+      if (error) {
+        setPortfolio(computePortfolio(propertyList, [], month));
+        setPortfolioLoading(false);
+        return;
+      }
+
+      const mapped = (data ?? [])
+        .map((row) => mapPortfolioRow(row as DbReservation))
+        .filter((r): r is PortfolioReservation => r !== null);
+
+      setPortfolio(computePortfolio(propertyList, mapped, month));
+      setPortfolioLoading(false);
+    },
+    [],
+  );
 
   const fetchDashboard = useCallback(
     async (propertyId: string, propertyName: string, month: string) => {
@@ -336,8 +469,12 @@ export default function UnitsPage() {
   );
 
   useEffect(() => {
-    loadProperties();
-  }, [loadProperties]);
+    async function init() {
+      const list = await loadProperties();
+      await loadPortfolio(list, portfolioMonthKey);
+    }
+    init();
+  }, [loadProperties, loadPortfolio, portfolioMonthKey]);
 
   useLayoutEffect(() => {
     if (!unitOpen || !unitRef.current) return;
@@ -410,6 +547,23 @@ export default function UnitsPage() {
     await fetchDashboard(property.id, property.name, monthKey);
   }
 
+  async function handlePortfolioUnitSelect(property: Property) {
+    setSelectedPropertyId(property.id);
+    setUnitQuery(property.name);
+    setUnitOpen(false);
+    setMonthKey(portfolioMonthKey);
+    setIsViewed(true);
+    setViewKey((k) => k + 1);
+    await fetchDashboard(property.id, property.name, portfolioMonthKey);
+  }
+
+  function formatUnitRevenue(row: UnitPortfolioRow) {
+    const parts: string[] = [];
+    if (row.egp > 0) parts.push(formatRevenue(row.egp, "EGP"));
+    if (row.usd > 0) parts.push(formatRevenue(row.usd, "USD"));
+    return parts.length > 0 ? parts.join(" · ") : "—";
+  }
+
   return (
     <div className="animate-fade-up pb-6">
       <header className="pt-4">
@@ -417,7 +571,86 @@ export default function UnitsPage() {
         <p className="mt-1 text-sm text-muted">Calendar & stats by unit</p>
       </header>
 
-      <form onSubmit={handleViewDashboard} className="mt-8 space-y-5">
+      <section className="mt-8">
+        <h2 className="font-display text-2xl text-text">Portfolio Overview</h2>
+        <p className="mt-1 text-sm text-muted">{portfolioMonthLabel}</p>
+
+        {portfolioLoading ? (
+          <div className="flex flex-col items-center justify-center py-14">
+            <div
+              className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent"
+              aria-hidden
+            />
+            <p className="mt-3 text-sm text-muted">Loading portfolio…</p>
+          </div>
+        ) : portfolio ? (
+          <>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <KpiCard
+                label="Total Revenue EGP"
+                value={formatRevenue(portfolio.egp, "EGP")}
+                valueClass="text-accent"
+              />
+              <KpiCard
+                label="Total Revenue USD"
+                value={formatRevenue(portfolio.usd, "USD")}
+                valueClass="text-blue-400"
+              />
+              <KpiCard
+                label="Portfolio Occupancy"
+                value={`${portfolio.occupancy}%`}
+                valueClass="text-emerald-400"
+              />
+              <KpiCard
+                label="Total Bookings"
+                value={String(portfolio.bookings)}
+                valueClass="text-text"
+              />
+            </div>
+
+            <ul className="mt-4 space-y-2">
+              {portfolio.unitRows.map((row) => (
+                <li key={row.propertyId}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePortfolioUnitSelect({
+                        id: row.propertyId,
+                        name: row.name,
+                      })
+                    }
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-accent/30 hover:bg-background"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-text">{row.name}</p>
+                        <p className="mt-0.5 text-xs text-muted">
+                          {row.bookings}{" "}
+                          {row.bookings === 1 ? "booking" : "bookings"} ·{" "}
+                          {row.occupancy}% occupancy
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-right text-xs font-semibold leading-snug text-text">
+                        {formatUnitRevenue(row)}
+                      </p>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </section>
+
+      <div className="mt-8 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs font-medium uppercase tracking-wide text-muted">
+          Unit Details
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      <form onSubmit={handleViewDashboard} className="mt-6 space-y-5">
         <div ref={unitRef}>
           <label htmlFor="units-search" className={labelClass}>
             Unit
