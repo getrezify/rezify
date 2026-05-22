@@ -15,6 +15,7 @@ const tabs = [
   { href: "/dashboard/units", label: "Units", Icon: GridIcon },
   { href: "/dashboard/units/add", label: "Add Unit", Icon: AddUnitIcon },
   { href: "/dashboard/calendar", label: "Calendar", Icon: CalendarGridIcon },
+  { href: "/dashboard/settings", label: "Settings", Icon: SettingsIcon },
 ] as const;
 
 function isTabActive(pathname: string, href: string) {
@@ -269,6 +270,25 @@ function CalendarGridIcon({ className }: { className?: string }) {
       <rect x="13.5" y="5" width="2.5" height="14" rx="0.5" opacity="0.8" />
       <rect x="17" y="5" width="2.5" height="14" rx="0.5" />
       <rect x="20.5" y="5" width="0.5" height="14" rx="0.25" opacity="0.25" />
+    </svg>
+  );
+}
+
+function SettingsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path
+        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
