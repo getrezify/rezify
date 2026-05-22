@@ -2,9 +2,8 @@
 
 import { BOOKING_SOURCE_LIST, type BookingSource } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
+import { getWorkspaceId } from "@/lib/workspace";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 type Property = {
   id: string;
@@ -86,10 +85,11 @@ export default function AddReservationPage() {
   }, [unitQuery, properties]);
 
   const loadProperties = useCallback(async () => {
+    const workspaceId = await getWorkspaceId();
     const { data, error } = await supabase
       .from("properties")
       .select("id, name")
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .order("name");
 
     if (error || !data) {
@@ -178,10 +178,11 @@ export default function AddReservationPage() {
   async function findConflict(
     propertyId: string,
   ): Promise<ConflictingReservation | null> {
+    const workspaceId = await getWorkspaceId();
     const { data, error } = await supabase
       .from("reservations")
       .select("guest_name, check_in, check_out, status, properties(name)")
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .eq("property_id", propertyId)
       .or("status.neq.cancelled,status.is.null")
       .lt("check_in", checkOut)
@@ -192,7 +193,7 @@ export default function AddReservationPage() {
       const fallback = await supabase
         .from("reservations")
         .select("guest_name, check_in, check_out, status")
-        .eq("workspace_id", WORKSPACE_ID)
+        .eq("workspace_id", workspaceId)
         .eq("property_id", propertyId)
         .or("status.neq.cancelled,status.is.null")
         .lt("check_in", checkOut)
@@ -223,8 +224,9 @@ export default function AddReservationPage() {
   }
 
   async function insertReservation(propertyId: string) {
+    const workspaceId = await getWorkspaceId();
     const { error } = await supabase.from("reservations").insert({
-      workspace_id: WORKSPACE_ID,
+      workspace_id: workspaceId,
       property_id: propertyId,
       guest_name: guestName.trim(),
       source,
@@ -240,6 +242,34 @@ export default function AddReservationPage() {
         type: "error",
       });
       return false;
+    }
+
+    const unitName =
+      properties.find((p) => p.id === propertyId)?.name ?? unitQuery.trim();
+    const nightCount = calculateNights(checkIn, checkOut) ?? 0;
+
+    try {
+      await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guestName: guestName.trim(),
+          unitName,
+          checkIn,
+          checkOut,
+          nights: nightCount,
+          price: totalPrice,
+          currency,
+          source:
+            source === "offline"
+              ? "direct"
+              : source === "owner"
+                ? "other"
+                : source,
+        }),
+      });
+    } catch {
+      // Reservation saved; WhatsApp notify is best-effort
     }
 
     setToast({ message: "Reservation saved!", type: "success" });

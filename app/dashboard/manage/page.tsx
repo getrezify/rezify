@@ -2,6 +2,7 @@
 
 import { isBookingSource, SourceBadge, type BookingSource } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
+import { getWorkspaceId } from "@/lib/workspace";
 import {
   useCallback,
   useEffect,
@@ -11,8 +12,6 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 type Currency = "EGP" | "USD";
 
@@ -108,10 +107,11 @@ export default function ManageReservationPage() {
   }, [unitQuery, unitOptions]);
 
   const loadUnitOptions = useCallback(async () => {
+    const workspaceId = await getWorkspaceId();
     const { data: units, error } = await supabase
       .from("properties")
       .select("name")
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .order("name");
 
     if (error || !units) {
@@ -205,11 +205,12 @@ export default function ManageReservationPage() {
     setToast(null);
 
     const searchTerm = unitQuery.trim().toLowerCase();
+    const workspaceId = await getWorkspaceId();
 
     const { data, error } = await supabase
       .from("reservations")
       .select("*, properties(name)")
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .eq("check_in", checkIn);
 
     setIsSearching(false);
@@ -218,7 +219,7 @@ export default function ManageReservationPage() {
       const fallback = await supabase
         .from("reservations")
         .select("*")
-        .eq("workspace_id", WORKSPACE_ID)
+        .eq("workspace_id", workspaceId)
         .eq("check_in", checkIn);
 
       if (fallback.error) {

@@ -7,6 +7,7 @@ import {
   type BookingSource,
 } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
+import { getWorkspaceId } from "@/lib/workspace";
 import {
   useCallback,
   useEffect,
@@ -16,8 +17,6 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 type Property = {
   id: string;
@@ -366,10 +365,11 @@ export default function UnitsPage() {
   }, [monthKey]);
 
   const loadProperties = useCallback(async () => {
+    const workspaceId = await getWorkspaceId();
     const { data, error } = await supabase
       .from("properties")
       .select("id, name")
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .order("name");
 
     if (error || !data) {
@@ -392,6 +392,7 @@ export default function UnitsPage() {
     async (propertyList: Property[], month: string) => {
       setPortfolioLoading(true);
 
+      const workspaceId = await getWorkspaceId();
       const { monthStart, nextMonth } = getMonthBounds(month);
 
       const { data, error } = await supabase
@@ -399,7 +400,7 @@ export default function UnitsPage() {
         .select(
           "id, property_id, guest_name, source, check_in, check_out, total_price, currency, status",
         )
-        .eq("workspace_id", WORKSPACE_ID)
+        .eq("workspace_id", workspaceId)
         .or("status.neq.cancelled,status.is.null")
         .lt("check_in", nextMonth)
         .gt("check_out", monthStart);
@@ -426,6 +427,7 @@ export default function UnitsPage() {
       setReservations([]);
       setDisplayPropertyName(propertyName);
 
+      const workspaceId = await getWorkspaceId();
       const { monthStart, nextMonth } = getMonthBounds(month);
 
       const { data, error } = await supabase
@@ -433,7 +435,7 @@ export default function UnitsPage() {
         .select(
           "id, guest_name, source, check_in, check_out, total_price, currency, status, properties(name)",
         )
-        .eq("workspace_id", WORKSPACE_ID)
+        .eq("workspace_id", workspaceId)
         .eq("property_id", propertyId)
         .or("status.neq.cancelled,status.is.null")
         .lt("check_in", nextMonth)
@@ -445,7 +447,7 @@ export default function UnitsPage() {
           .select(
             "id, guest_name, source, check_in, check_out, total_price, currency, status",
           )
-          .eq("workspace_id", WORKSPACE_ID)
+          .eq("workspace_id", workspaceId)
           .eq("property_id", propertyId)
           .or("status.neq.cancelled,status.is.null")
           .lt("check_in", nextMonth)

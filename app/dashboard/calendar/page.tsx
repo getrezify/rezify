@@ -6,6 +6,7 @@ import {
   type BookingSource,
 } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
+import { getWorkspaceId } from "@/lib/workspace";
 import {
   useCallback,
   useEffect,
@@ -17,7 +18,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 const UNIT_COL_WIDTH = 160;
 const DAY_COL_WIDTH = 36;
 const ROW_HEIGHT = 52;
@@ -578,10 +578,11 @@ export default function CalendarPage() {
   }, [viewMode, properties, selectedPropertyId]);
 
   const loadProperties = useCallback(async () => {
+    const workspaceId = await getWorkspaceId();
     const { data, error: propsError } = await supabase
       .from("properties")
       .select("id, name")
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .order("name");
 
     if (propsError || !data) {
@@ -603,6 +604,7 @@ export default function CalendarPage() {
     setIsLoading(true);
     setError(null);
 
+    const workspaceId = await getWorkspaceId();
     const { monthStart, nextMonth } = getMonthBounds(month);
 
     const { data, error: resError } = await supabase
@@ -610,7 +612,7 @@ export default function CalendarPage() {
       .select(
         "id, property_id, guest_name, check_in, check_out, source, total_price, currency, status",
       )
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .or("status.neq.cancelled,status.is.null")
       .lt("check_in", nextMonth)
       .gte("check_out", monthStart);

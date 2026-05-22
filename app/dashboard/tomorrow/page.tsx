@@ -1,9 +1,8 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
+import { getWorkspaceId } from "@/lib/workspace";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 type StayCard = {
   id: string;
@@ -53,11 +52,11 @@ function mapToStayCard(row: DbReservation, nightsInfo: string): StayCard {
   };
 }
 
-async function fetchCheckIns(date: string) {
+async function fetchCheckIns(workspaceId: string, date: string) {
   const { data, error } = await supabase
     .from("reservations")
     .select("*, units(name)")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_in", date);
 
   if (!error) return (data ?? []) as DbReservation[];
@@ -65,18 +64,18 @@ async function fetchCheckIns(date: string) {
   const fallback = await supabase
     .from("reservations")
     .select("*")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_in", date);
 
   if (fallback.error) throw new Error(fallback.error.message);
   return (fallback.data ?? []) as DbReservation[];
 }
 
-async function fetchCheckOuts(date: string) {
+async function fetchCheckOuts(workspaceId: string, date: string) {
   const { data, error } = await supabase
     .from("reservations")
     .select("*, units(name)")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_out", date);
 
   if (!error) return (data ?? []) as DbReservation[];
@@ -84,7 +83,7 @@ async function fetchCheckOuts(date: string) {
   const fallback = await supabase
     .from("reservations")
     .select("*")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_out", date);
 
   if (fallback.error) throw new Error(fallback.error.message);
@@ -119,9 +118,10 @@ export default function TomorrowPage() {
     const tomorrow = getTomorrowISO();
 
     try {
+      const workspaceId = await getWorkspaceId();
       const [checkInRows, checkOutRows] = await Promise.all([
-        fetchCheckIns(tomorrow),
-        fetchCheckOuts(tomorrow),
+        fetchCheckIns(workspaceId, tomorrow),
+        fetchCheckOuts(workspaceId, tomorrow),
       ]);
 
       setCheckIns(

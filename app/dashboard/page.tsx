@@ -1,9 +1,8 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
+import { getWorkspaceId } from "@/lib/workspace";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 const TOTAL_UNITS = 25;
 
 type StayCard = {
@@ -59,11 +58,11 @@ function mapToStayCard(
   };
 }
 
-async function fetchCheckIns(today: string) {
+async function fetchCheckIns(workspaceId: string, today: string) {
   const { data, error } = await supabase
     .from("reservations")
     .select("*, units(name)")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_in", today);
 
   if (!error) return (data ?? []) as DbReservation[];
@@ -71,18 +70,18 @@ async function fetchCheckIns(today: string) {
   const fallback = await supabase
     .from("reservations")
     .select("*")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_in", today);
 
   if (fallback.error) throw new Error(fallback.error.message);
   return (fallback.data ?? []) as DbReservation[];
 }
 
-async function fetchCheckOuts(today: string) {
+async function fetchCheckOuts(workspaceId: string, today: string) {
   const { data, error } = await supabase
     .from("reservations")
     .select("*, units(name)")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_out", today);
 
   if (!error) return (data ?? []) as DbReservation[];
@@ -90,18 +89,18 @@ async function fetchCheckOuts(today: string) {
   const fallback = await supabase
     .from("reservations")
     .select("*")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .eq("check_out", today);
 
   if (fallback.error) throw new Error(fallback.error.message);
   return (fallback.data ?? []) as DbReservation[];
 }
 
-async function fetchOccupied(today: string) {
+async function fetchOccupied(workspaceId: string, today: string) {
   const { data, error } = await supabase
     .from("reservations")
     .select("*, units(name)")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .lte("check_in", today)
     .gt("check_out", today);
 
@@ -110,7 +109,7 @@ async function fetchOccupied(today: string) {
   const fallback = await supabase
     .from("reservations")
     .select("*")
-    .eq("workspace_id", WORKSPACE_ID)
+    .eq("workspace_id", workspaceId)
     .lte("check_in", today)
     .gt("check_out", today);
 
@@ -145,10 +144,11 @@ export default function TodayPage() {
     const today = getTodayISO();
 
     try {
+      const workspaceId = await getWorkspaceId();
       const [checkInRows, checkOutRows, occupiedRows] = await Promise.all([
-        fetchCheckIns(today),
-        fetchCheckOuts(today),
-        fetchOccupied(today),
+        fetchCheckIns(workspaceId, today),
+        fetchCheckOuts(workspaceId, today),
+        fetchOccupied(workspaceId, today),
       ]);
 
       setCheckIns(

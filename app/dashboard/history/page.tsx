@@ -8,9 +8,8 @@ import {
   type BookingSource,
 } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
+import { getWorkspaceId } from "@/lib/workspace";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-const WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 type HistoryReservation = {
   id: string;
@@ -110,17 +109,18 @@ export default function HistoryPage() {
     setIsLoading(true);
     setFetchError(null);
 
+    const workspaceId = await getWorkspaceId();
     const { data, error } = await supabase
       .from("reservations")
       .select("*, units(name)")
-      .eq("workspace_id", WORKSPACE_ID)
+      .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false });
 
     if (error) {
       const fallback = await supabase
         .from("reservations")
         .select("*")
-        .eq("workspace_id", WORKSPACE_ID)
+        .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false });
 
       if (fallback.error) {

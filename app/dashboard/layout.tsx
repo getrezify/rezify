@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
+import { clearWorkspaceCache } from "@/lib/workspace";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      clearWorkspaceCache();
       if (!session) {
         setAuthReady(false);
         setUserEmail("");
@@ -87,6 +89,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   async function handleSignOut() {
     setIsSigningOut(true);
     setMenuOpen(false);
+    clearWorkspaceCache();
     await supabase.auth.signOut();
     setIsSigningOut(false);
     router.replace("/");
