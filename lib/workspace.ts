@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 let cachedWorkspaceId: string | null = null;
 let cachedUserId: string | null = null;
@@ -14,11 +15,13 @@ export function clearWorkspaceCache() {
  * Returns the workspace id for the currently logged-in user.
  * Cached for the session until clearWorkspaceCache() is called (e.g. on sign out).
  */
-export async function getWorkspaceId(): Promise<string> {
+export async function getWorkspaceId(
+  client: SupabaseClient = supabase,
+): Promise<string> {
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await client.auth.getUser();
 
   if (authError || !user) {
     throw new Error("Not authenticated");
@@ -30,7 +33,7 @@ export async function getWorkspaceId(): Promise<string> {
 
   if (!inFlight) {
     inFlight = (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("workspaces")
         .select("id")
         .eq("owner_id", user.id)

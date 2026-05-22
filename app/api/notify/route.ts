@@ -1,19 +1,72 @@
+import { getWorkspaceId } from "@/lib/workspace";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+
+function createAuthedClient(req: NextRequest): SupabaseClient | null {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+
+  const token = authHeader.slice(7);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
+
+function formatWhatsAppTo(number: string): string {
+  const trimmed = number.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("whatsapp:")) return trimmed;
+  const digits = trimmed.startsWith("+") ? trimmed : `+${trimmed}`;
+  return `whatsapp:${digits}`;
+}
+
+async function resolveNotifyTo(
+  client: SupabaseClient | null,
+): Promise<string | null> {
+  const envFallback = process.env.NOTIFY_WHATSAPP_TO?.trim() || null;
+
+  if (!client) return envFallback;
+
+  try {
+    const workspaceId = await getWorkspaceId(client);
+    const { data, error } = await client
+      .from("workspaces")
+      .select("whatsapp_number")
+      .eq("id", workspaceId)
+      .single();
+
+    if (error) return envFallback;
+
+    const saved = data?.whatsapp_number?.trim();
+    if (saved) return formatWhatsAppTo(saved);
+
+    return envFallback;
+  } catch {
+    return envFallback;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("SID:", process.env.TWILIO_ACCOUNT_SID?.slice(0, 5));
-    console.log("TOKEN:", process.env.TWILIO_AUTH_TOKEN?.slice(0, 5));
-    console.log("FROM:", process.env.TWILIO_WHATSAPP_FROM?.slice(0, 5));
-    console.log("TO:", process.env.NOTIFY_WHATSAPP_TO?.slice(0, 5));
-
     const { guestName, unitName, checkIn, checkOut, nights, price, currency, source } =
       await req.json();
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID!;
     const authToken = process.env.TWILIO_AUTH_TOKEN!;
     const from = process.env.TWILIO_WHATSAPP_FROM!;
-    const to = process.env.NOTIFY_WHATSAPP_TO!;
+
+    const authedClient = createAuthedClient(req);
+    const to = await resolveNotifyTo(authedClient);
+
+    if (!to) {
+      return NextResponse.json(
+        { error: "No WhatsApp number configured" },
+        { status: 400 },
+      );
+    }
 
     const sourceEmoji: Record<string, string> = {
       airbnb: "🏠 Airbnb",

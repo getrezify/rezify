@@ -7,6 +7,7 @@ create table if not exists public.workspaces (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users (id) on delete cascade,
   name text not null default 'My Portfolio',
+  whatsapp_number text,
   created_at timestamptz not null default now(),
   constraint workspaces_owner_id_unique unique (owner_id)
 );

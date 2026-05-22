@@ -24,6 +24,8 @@ export default function SettingsPage() {
   const [isEditingWorkspace, setIsEditingWorkspace] = useState(false);
   const [workspaceDraft, setWorkspaceDraft] = useState("");
   const [isSavingWorkspace, setIsSavingWorkspace] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -54,7 +56,7 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from("workspaces")
-        .select("name")
+        .select("name, whatsapp_number")
         .eq("id", id)
         .single();
 
@@ -64,6 +66,7 @@ export default function SettingsPage() {
 
       setWorkspaceName(data.name ?? "");
       setWorkspaceDraft(data.name ?? "");
+      setWhatsappNumber(data.whatsapp_number ?? "");
     } catch (err) {
       setToast({
         message: err instanceof Error ? err.message : "Failed to load settings",
@@ -130,6 +133,41 @@ export default function SettingsPage() {
       });
     } finally {
       setIsSavingWorkspace(false);
+    }
+  }
+
+  async function handleWhatsappSave(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!workspaceId) return;
+
+    setIsSavingWhatsapp(true);
+
+    try {
+      const trimmed = whatsappNumber.trim();
+      const { error } = await supabase
+        .from("workspaces")
+        .update({ whatsapp_number: trimmed || null })
+        .eq("id", workspaceId);
+
+      if (error) {
+        setToast({
+          message: error.message || "Failed to save WhatsApp number",
+          type: "error",
+        });
+        return;
+      }
+
+      setWhatsappNumber(trimmed);
+      setToast({ message: "WhatsApp number saved", type: "success" });
+    } catch (err) {
+      setToast({
+        message:
+          err instanceof Error ? err.message : "Failed to save WhatsApp number",
+        type: "error",
+      });
+    } finally {
+      setIsSavingWhatsapp(false);
     }
   }
 
@@ -298,6 +336,33 @@ export default function SettingsPage() {
                 </div>
               )}
             </div>
+          </section>
+
+          <section className={sectionClass}>
+            <h2 className="text-sm font-semibold text-text">Notifications</h2>
+            <form onSubmit={handleWhatsappSave} className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="whatsapp-number" className={labelClass}>
+                  WhatsApp Number for Notifications
+                </label>
+                <input
+                  id="whatsapp-number"
+                  type="tel"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="+201XXXXXXXXX"
+                  className={inputClass}
+                  autoComplete="tel"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSavingWhatsapp}
+                className="w-full rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingWhatsapp ? "Saving…" : "Save"}
+              </button>
+            </form>
           </section>
 
           <section className={sectionClass}>
