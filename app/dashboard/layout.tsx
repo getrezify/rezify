@@ -1,5 +1,6 @@
 "use client";
 
+import { clearPlanCache, getUserPlan, type UserPlan } from "@/lib/plan";
 import { supabase } from "@/lib/supabase";
 import { clearWorkspaceCache } from "@/lib/workspace";
 import Link from "next/link";
@@ -15,8 +16,16 @@ const tabs = [
   { href: "/dashboard/units", label: "Units", Icon: GridIcon },
   { href: "/dashboard/units/add", label: "Add Unit", Icon: AddUnitIcon },
   { href: "/dashboard/calendar", label: "Calendar", Icon: CalendarGridIcon },
+  {
+    href: "/dashboard/channels",
+    label: "Channels",
+    Icon: ChannelsIcon,
+    proOnly: true,
+  },
   { href: "/dashboard/settings", label: "Settings", Icon: SettingsIcon },
 ] as const;
+
+type Tab = (typeof tabs)[number];
 
 function isTabActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
@@ -40,7 +49,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [userEmail, setUserEmail] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const visibleTabs = tabs.filter(
+    (tab): tab is Tab => !("proOnly" in tab && tab.proOnly) || userPlan === "pro",
+  );
 
   const avatarLetter = userEmail ? userEmail[0].toUpperCase() : "?";
 
@@ -61,26 +75,46 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       setUserEmail(session.user.email ?? "");
       setAuthReady(true);
+
+      try {
+        setUserPlan(await getUserPlan());
+      } catch {
+        setUserPlan("starter");
+      }
     }
 
     checkAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       clearWorkspaceCache();
+      clearPlanCache();
       if (!session) {
         setAuthReady(false);
         setUserEmail("");
+        setUserPlan(null);
         setMenuOpen(false);
         router.replace("/");
       } else {
         setUserEmail(session.user.email ?? "");
+        try {
+          setUserPlan(await getUserPlan());
+        } catch {
+          setUserPlan("starter");
+        }
       }
     });
 
     return () => subscription.unsubscribe();
   }, [router]);
+
+  useEffect(() => {
+    if (userPlan === null) return;
+    if (userPlan === "starter" && pathname.startsWith("/dashboard/channels")) {
+      router.replace("/dashboard/upgrade");
+    }
+  }, [userPlan, pathname, router]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -98,6 +132,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     setIsSigningOut(true);
     setMenuOpen(false);
     clearWorkspaceCache();
+    clearPlanCache();
     await supabase.auth.signOut();
     setIsSigningOut(false);
     router.replace("/");
@@ -169,8 +204,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2">{children}</main>
 
       <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-border bg-surface/95 backdrop-blur-sm">
-        <ul className="flex items-stretch justify-around overflow-x-auto px-0.5 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {tabs.map(({ href, label, Icon }) => {
+        <div className="overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
+          <ul className="flex items-stretch justify-around px-0.5 py-2">
+          {visibleTabs.map(({ href, label, Icon }) => {
             const isActive = isTabActive(pathname, href);
 
             return (
@@ -189,7 +225,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </div>
       </nav>
     </div>
   );
@@ -270,6 +307,25 @@ function CalendarGridIcon({ className }: { className?: string }) {
       <rect x="13.5" y="5" width="2.5" height="14" rx="0.5" opacity="0.8" />
       <rect x="17" y="5" width="2.5" height="14" rx="0.5" />
       <rect x="20.5" y="5" width="0.5" height="14" rx="0.25" opacity="0.25" />
+    </svg>
+  );
+}
+
+function ChannelsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      aria-hidden
+    >
+      <path
+        d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66"
+        strokeLinecap="round"
+      />
+      <path d="M16 4h4v4M8 20H4v-4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

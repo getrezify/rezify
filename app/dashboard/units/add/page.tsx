@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  getUserPlan,
+  isStarterAtUnitLimit,
+  STARTER_UNIT_LIMIT,
+  type UserPlan,
+} from "@/lib/plan";
 import { supabase } from "@/lib/supabase";
 import { getWorkspaceId } from "@/lib/workspace";
 import Link from "next/link";
@@ -34,6 +40,8 @@ export default function AddUnitPage() {
   const [unitName, setUnitName] = useState("");
   const [properties, setProperties] = useState<Property[]>([]);
   const [listLoading, setListLoading] = useState(true);
+  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isListActionLoading, setIsListActionLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -87,8 +95,24 @@ export default function AddUnitPage() {
   }, []);
 
   useEffect(() => {
-    loadProperties();
+    async function init() {
+      setPlanLoading(true);
+      try {
+        const plan = await getUserPlan();
+        setUserPlan(plan);
+      } catch {
+        setUserPlan("starter");
+      } finally {
+        setPlanLoading(false);
+      }
+      await loadProperties();
+    }
+    init();
   }, [loadProperties]);
+
+  const atStarterUnitLimit =
+    userPlan !== null &&
+    isStarterAtUnitLimit(userPlan, properties.length);
 
   useEffect(() => {
     if (!toast) return;
@@ -303,30 +327,56 @@ export default function AddUnitPage() {
         <p className="mt-1 text-sm text-muted">Create a new property</p>
       </header>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        <div className="animate-fade-up [animation-delay:50ms]">
-          <label htmlFor="unit-name" className={labelClass}>
-            Unit Name
-          </label>
-          <input
-            id="unit-name"
-            type="text"
-            value={unitName}
-            onChange={(e) => setUnitName(e.target.value)}
-            placeholder="e.g. Studio A"
-            className={inputClass}
+      {planLoading || listLoading ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <div
+            className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent"
+            aria-hidden
           />
+          <p className="mt-3 text-sm text-muted">Loading…</p>
         </div>
+      ) : atStarterUnitLimit ? (
+        <div className="mt-8 rounded-xl border border-accent/40 bg-[var(--accent-muted)] px-4 py-6">
+          <h2 className="font-display text-xl text-text">Unit limit reached</h2>
+          <p className="mt-2 text-sm text-muted">
+            Starter includes up to {STARTER_UNIT_LIMIT} units for free. Add more
+            units at $5/unit/month, or upgrade to Pro for channel sync and
+            unlimited growth.
+          </p>
+          <Link
+            href="/dashboard/upgrade"
+            className="mt-4 flex w-full items-center justify-center rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            View upgrade options
+          </Link>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          <div className="animate-fade-up [animation-delay:50ms]">
+            <label htmlFor="unit-name" className={labelClass}>
+              Unit Name
+            </label>
+            <input
+              id="unit-name"
+              type="text"
+              value={unitName}
+              onChange={(e) => setUnitName(e.target.value)}
+              placeholder="e.g. Studio A"
+              className={inputClass}
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="animate-fade-up w-full rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors duration-200 hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 [animation-delay:100ms]"
-        >
-          {isSaving ? "Saving…" : "Add Unit"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="animate-fade-up w-full rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors duration-200 hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 [animation-delay:100ms]"
+          >
+            {isSaving ? "Saving…" : "Add Unit"}
+          </button>
+        </form>
+      )}
 
+      {!planLoading && (
       <section className="mt-10">
         <h2 className="font-display text-xl text-text">Your Units</h2>
         <p className="mt-1 text-sm text-muted">Rename or remove existing properties</p>
@@ -417,6 +467,7 @@ export default function AddUnitPage() {
           </ul>
         )}
       </section>
+      )}
     </div>
   );
 }

@@ -83,3 +83,12 @@ input:focus {
   left: 50%;
   animation: toast-slide-up 0.35s ease-out both;
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
