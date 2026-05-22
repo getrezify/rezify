@@ -13,8 +13,15 @@ const tabs = [
   { href: "/dashboard/manage", label: "Manage", Icon: EditIcon },
   { href: "/dashboard/history", label: "History", Icon: HistoryIcon },
   { href: "/dashboard/units", label: "Units", Icon: GridIcon },
+  { href: "/dashboard/units/add", label: "Add Unit", Icon: AddUnitIcon },
   { href: "/dashboard/calendar", label: "Calendar", Icon: CalendarGridIcon },
 ] as const;
+
+function isTabActive(pathname: string, href: string) {
+  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/dashboard/units") return pathname === "/dashboard/units";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 function formatHeaderDate(date: Date) {
   return date.toLocaleDateString("en-US", {
@@ -163,10 +170,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-border bg-surface/95 backdrop-blur-sm">
         <ul className="flex items-stretch justify-around overflow-x-auto px-0.5 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map(({ href, label, Icon }) => {
-            const isActive =
-              href === "/dashboard"
-                ? pathname === "/dashboard"
-                : pathname.startsWith(href);
+            const isActive = isTabActive(pathname, href);
 
             return (
               <li key={href} className="flex-1">
@@ -243,6 +247,15 @@ function GridIcon({ className }: { className?: string }) {
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
       <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+function AddUnitIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <rect x="5" y="5" width="14" height="14" rx="2" />
+      <path d="M12 9v6M9 12h6" strokeLinecap="round" />
     </svg>
   );
 }

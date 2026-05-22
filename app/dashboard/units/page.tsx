@@ -8,6 +8,7 @@ import {
 } from "@/lib/booking-source";
 import { supabase } from "@/lib/supabase";
 import { getWorkspaceId } from "@/lib/workspace";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -77,6 +78,9 @@ const selectClass =
   "w-full appearance-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text transition-colors focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)] [color-scheme:dark]";
 
 const labelClass = "mb-2 block text-sm font-medium text-text";
+
+const addActionClass =
+  "flex w-full items-center justify-center rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -470,13 +474,18 @@ export default function UnitsPage() {
     [],
   );
 
+  const refreshUnits = useCallback(async () => {
+    const list = await loadProperties();
+    await loadPortfolio(list, portfolioMonthKey);
+    return list;
+  }, [loadProperties, loadPortfolio, portfolioMonthKey]);
+
   useEffect(() => {
     async function init() {
-      const list = await loadProperties();
-      await loadPortfolio(list, portfolioMonthKey);
+      await refreshUnits();
     }
     init();
-  }, [loadProperties, loadPortfolio, portfolioMonthKey]);
+  }, [refreshUnits]);
 
   useLayoutEffect(() => {
     if (!unitOpen || !unitRef.current) return;
@@ -572,6 +581,10 @@ export default function UnitsPage() {
         <h1 className="font-display text-3xl text-text">Units</h1>
         <p className="mt-1 text-sm text-muted">Calendar & stats by unit</p>
       </header>
+
+      <Link href="/dashboard/units/add" className={addActionClass}>
+        Add Unit
+      </Link>
 
       <section className="mt-8">
         <h2 className="font-display text-2xl text-text">Portfolio Overview</h2>
