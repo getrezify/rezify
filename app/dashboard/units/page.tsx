@@ -22,7 +22,14 @@ import { createPortal } from "react-dom";
 type Property = {
   id: string;
   name: string;
+  ical_token: string | null;
 };
+
+const ICAL_EXPORT_HOST = "https://getrezify.com";
+
+function getIcalExportUrl(token: string) {
+  return `${ICAL_EXPORT_HOST}/api/ical/${token}`;
+}
 
 type UnitReservation = {
   id: string;
@@ -81,6 +88,12 @@ const labelClass = "mb-2 block text-sm font-medium text-text";
 
 const addActionClass =
   "flex w-full items-center justify-center rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+const readOnlyInputClass =
+  "min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-xs text-text";
+
+const copyButtonClass =
+  "shrink-0 rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-text transition-colors hover:border-accent hover:text-accent";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -336,6 +349,7 @@ export default function UnitsPage() {
   const [viewKey, setViewKey] = useState(0);
   const [reservations, setReservations] = useState<UnitReservation[]>([]);
   const [displayPropertyName, setDisplayPropertyName] = useState("");
+  const [copiedPropertyId, setCopiedPropertyId] = useState<string | null>(null);
 
   const unitRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
@@ -370,11 +384,29 @@ export default function UnitsPage() {
 
   const loadProperties = useCallback(async () => {
     const workspaceId = await getWorkspaceId();
-    const { data, error } = await supabase
+
+    let { data, error } = await supabase
       .from("properties")
-      .select("id, name")
+      .select("id, name, ical_token")
       .eq("workspace_id", workspaceId)
       .order("name");
+
+    const missingTokenColumn =
+      error?.message?.includes("ical_token") || error?.code === "42703";
+
+    if (missingTokenColumn) {
+      const fallback = await supabase
+        .from("properties")
+        .select("id, name")
+        .eq("workspace_id", workspaceId)
+        .order("name");
+
+      data = (fallback.data ?? []).map((row) => ({
+        ...row,
+        ical_token: null,
+      }));
+      error = fallback.error;
+    }
 
     if (error || !data) {
       setProperties([]);
@@ -385,6 +417,9 @@ export default function UnitsPage() {
       .map((row) => ({
         id: row.id as string,
         name: row.name as string,
+        ical_token: missingTokenColumn
+          ? null
+          : ((row as { ical_token?: string | null }).ical_token ?? null),
       }))
       .filter((p) => p.name?.trim());
 
@@ -558,7 +593,7 @@ export default function UnitsPage() {
     await fetchDashboard(property.id, property.name, monthKey);
   }
 
-  async function handlePortfolioUnitSelect(property: Property) {
+  async function handlePortfolioUnitSelect(property: Pick<Property, "id" | "name">) {
     setSelectedPropertyId(property.id);
     setUnitQuery(property.name);
     setUnitOpen(false);
@@ -575,6 +610,24 @@ export default function UnitsPage() {
     return parts.length > 0 ? parts.join(" · ") : "—";
   }
 
+  async function handleCopyIcalUrl(property: Property) {
+    if (!property.ical_token) return;
+
+    const url = getIcalExportUrl(property.ical_token);
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedPropertyId(property.id);
+      setTimeout(() => {
+        setCopiedPropertyId((current) =>
+          current === property.id ? null : current,
+        );
+      }, 2000);
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <div className="animate-fade-up pb-6">
       <header className="pt-4">
@@ -585,6 +638,64 @@ export default function UnitsPage() {
       <Link href="/dashboard/units/add" className={addActionClass}>
         Add Unit
       </Link>
+
+      {properties.length > 0 && (
+        <section className="mt-8 space-y-4">
+          <div>
+            <h2 className="font-display text-xl text-text">iCal export</h2>
+            <p className="mt-1 text-sm text-muted">
+              Share your Rezify calendar with booking channels
+            </p>
+          </div>
+          <ul className="space-y-4">
+            {properties.map((property) => {
+              const exportUrl = property.ical_token
+                ? getIcalExportUrl(property.ical_token)
+                : null;
+
+              return (
+                <li
+                  key={property.id}
+                  className="rounded-xl border border-border bg-surface px-4 py-4"
+                >
+                  <p className="text-sm font-semibold text-text">
+                    {property.name}
+                  </p>
+                  <p className="mt-3 text-sm font-medium text-text">
+                    iCal Export URL
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Paste this into Airbnb or Booking.com to sync your calendar
+                  </p>
+                  {exportUrl ? (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={exportUrl}
+                        aria-label={`iCal export URL for ${property.name}`}
+                        className={readOnlyInputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyIcalUrl(property)}
+                        className={copyButtonClass}
+                      >
+                        {copiedPropertyId === property.id ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-muted">
+                      Export URL unavailable. Run supabase/add-ical-export-token.sql
+                      in Supabase, then refresh.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="mt-8">
         <h2 className="font-display text-2xl text-text">Portfolio Overview</h2>
@@ -629,10 +740,13 @@ export default function UnitsPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      handlePortfolioUnitSelect({
-                        id: row.propertyId,
-                        name: row.name,
-                      })
+                      handlePortfolioUnitSelect(
+                        properties.find((p) => p.id === row.propertyId) ?? {
+                          id: row.propertyId,
+                          name: row.name,
+                          ical_token: null,
+                        },
+                      )
                     }
                     className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-accent/30 hover:bg-background"
                   >
