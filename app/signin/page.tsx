@@ -8,11 +8,10 @@ import { useEffect, useState } from "react";
 const inputClass =
   "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-text transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)]";
 
-export default function SignupPage() {
+export default function SignInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -22,23 +21,12 @@ export default function SignupPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setIsLoading(true);
     setToast(null);
 
-    if (password !== confirmPassword) {
-      setToast("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 6) {
-      setToast("Password must be at least 6 characters");
-      return;
-    }
-
-    setIsLoading(true);
-
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
@@ -46,7 +34,7 @@ export default function SignupPage() {
     setIsLoading(false);
 
     if (error) {
-      setToast(error.message || "Could not create account");
+      setToast("Invalid email or password");
       return;
     }
 
@@ -72,20 +60,21 @@ export default function SignupPage() {
               Rezify
             </h1>
             <p className="mt-2 text-sm text-muted sm:text-base">
-              Create your account
+              Property management, simplified
             </p>
           </header>
 
-          <form className="space-y-5" onSubmit={handleSignUp}>
+          <form className="space-y-5" onSubmit={handleSignIn}>
             <div className="space-y-2">
               <label
-                htmlFor="signup-email"
+                htmlFor="email"
                 className="block text-sm font-medium text-text"
               >
                 Email
               </label>
               <input
-                id="signup-email"
+                id="email"
+                name="email"
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -98,36 +87,18 @@ export default function SignupPage() {
 
             <div className="space-y-2">
               <label
-                htmlFor="signup-password"
+                htmlFor="password"
                 className="block text-sm font-medium text-text"
               >
                 Password
               </label>
               <input
-                id="signup-password"
+                id="password"
+                name="password"
                 type="password"
-                autoComplete="new-password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className={inputClass}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="confirm-password"
-                className="block text-sm font-medium text-text"
-              >
-                Confirm Password
-              </label>
-              <input
-                id="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 required
                 className={inputClass}
@@ -139,17 +110,17 @@ export default function SignupPage() {
               disabled={isLoading}
               className="mt-2 w-full rounded-lg bg-accent py-3 text-sm font-semibold text-background transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading ? "Creating account…" : "Create Account"}
+              {isLoading ? "Signing in…" : "Sign In"}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-muted">
-            Already have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
-              href="/signin"
+              href="/signup"
               className="font-medium text-accent transition-colors hover:text-accent-hover"
             >
-              Sign in
+              Sign up
             </Link>
           </p>
         </div>

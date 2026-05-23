@@ -237,7 +237,7 @@ export default function SettingsPage() {
     clearWorkspaceCache();
     await supabase.auth.signOut();
     setIsSigningOut(false);
-    router.replace("/");
+    router.replace("/signin");
   }
 
   return (

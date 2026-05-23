@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.replace("/");
+        router.replace("/signin");
         return;
       }
 
@@ -95,7 +95,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         setUserEmail("");
         setUserPlan(null);
         setMenuOpen(false);
-        router.replace("/");
+        router.replace("/signin");
       } else {
         setUserEmail(session.user.email ?? "");
         try {
@@ -135,7 +135,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     clearPlanCache();
     await supabase.auth.signOut();
     setIsSigningOut(false);
-    router.replace("/");
+    router.replace("/signin");
   }
 
   if (!authReady) {
