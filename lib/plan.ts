@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getAuthenticatedUser, getWorkspaceId } from "@/lib/workspace";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type UserPlan = "starter" | "pro";
@@ -24,14 +24,7 @@ export function isStarterAtUnitLimit(plan: UserPlan, unitCount: number): boolean
 export async function getUserPlan(
   client: SupabaseClient = supabase,
 ): Promise<UserPlan> {
-  const {
-    data: { user },
-    error: authError,
-  } = await client.auth.getUser();
-
-  if (authError || !user) {
-    throw new Error("Not authenticated");
-  }
+  const user = await getAuthenticatedUser(client);
 
   if (cachedPlan && cachedPlanUserId === user.id) {
     return cachedPlan;

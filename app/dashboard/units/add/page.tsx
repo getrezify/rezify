@@ -14,6 +14,13 @@ import { useCallback, useEffect, useState } from "react";
 type Property = {
   id: string;
   name: string;
+  airbnb_ical_url: string | null;
+  booking_ical_url: string | null;
+};
+
+type IcalDraft = {
+  airbnb: string;
+  booking: string;
 };
 
 const inputClass =
@@ -50,65 +57,130 @@ export default function AddUnitPage() {
     propertyId: string;
     name: string;
   } | null>(null);
+  const [icalDrafts, setIcalDrafts] = useState<Record<string, IcalDraft>>({});
+  const [savingIcalId, setSavingIcalId] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const loadProperties = useCallback(async () => {
-    setListLoading(true);
-
+  const loadProperties = useCallback(async (): Promise<string | null> => {
     try {
       const workspaceId = await getWorkspaceId();
-      const { data, error } = await supabase
+
+      const fullQuery = await supabase
         .from("properties")
-        .select("id, name")
+        .select("id, name, airbnb_ical_url, booking_ical_url")
         .eq("workspace_id", workspaceId)
         .order("name");
 
-      if (error) {
-        setProperties([]);
-        setToast({
-          message: error.message || "Failed to load units",
-          type: "error",
-        });
-        return;
+      const missingIcalColumns =
+        fullQuery.error?.message?.includes("airbnb_ical_url") ||
+        fullQuery.error?.message?.includes("booking_ical_url") ||
+        fullQuery.error?.code === "42703";
+
+      const queryResult = missingIcalColumns
+        ? await supabase
+            .from("properties")
+            .select("id, name")
+            .eq("workspace_id", workspaceId)
+            .order("name")
+        : fullQuery;
+
+      if (queryResult.error) {
+        throw new Error(queryResult.error.message || "Failed to load units");
       }
 
-      const list = (data ?? [])
+      const list = (queryResult.data ?? [])
         .map((row) => ({
           id: row.id as string,
           name: row.name as string,
+          airbnb_ical_url: missingIcalColumns
+            ? null
+            : ((row as { airbnb_ical_url?: string | null }).airbnb_ical_url ??
+              null),
+          booking_ical_url: missingIcalColumns
+            ? null
+            : ((row as { booking_ical_url?: string | null }).booking_ical_url ??
+              null),
         }))
         .filter((p) => p.name?.trim());
 
       setProperties(list);
+      setIcalDrafts(
+        Object.fromEntries(
+          list.map((p) => [
+            p.id,
+            {
+              airbnb: p.airbnb_ical_url ?? "",
+              booking: p.booking_ical_url ?? "",
+            },
+          ]),
+        ),
+      );
+
+      if (missingIcalColumns) {
+        return "iCal columns are missing in the database. Run supabase/add-ical-urls.sql, then refresh.";
+      }
+
+      return null;
     } catch (err) {
       setProperties([]);
-      setToast({
-        message: err instanceof Error ? err.message : "Failed to load units",
-        type: "error",
-      });
-    } finally {
-      setListLoading(false);
+      setIcalDrafts({});
+      throw err;
     }
   }, []);
 
-  useEffect(() => {
-    async function init() {
-      setPlanLoading(true);
-      try {
-        const plan = await getUserPlan();
-        setUserPlan(plan);
-      } catch {
-        setUserPlan("starter");
-      } finally {
-        setPlanLoading(false);
-      }
-      await loadProperties();
+  const runPageLoad = useCallback(async () => {
+    setPlanLoading(true);
+    setListLoading(true);
+    setLoadError(null);
+
+    const [planResult, propertiesResult] = await Promise.allSettled([
+      getUserPlan(),
+      loadProperties(),
+    ]);
+
+    if (planResult.status === "fulfilled") {
+      setUserPlan(planResult.value);
+    } else {
+      setUserPlan("starter");
     }
-    init();
+
+    let errorMessage: string | null = null;
+
+    if (planResult.status === "rejected") {
+      errorMessage =
+        planResult.reason instanceof Error
+          ? planResult.reason.message
+          : "Failed to load plan";
+    }
+
+    if (propertiesResult.status === "fulfilled") {
+      if (propertiesResult.value) {
+        errorMessage = errorMessage
+          ? `${errorMessage} ${propertiesResult.value}`
+          : propertiesResult.value;
+      }
+    } else {
+      const propertiesMsg =
+        propertiesResult.reason instanceof Error
+          ? propertiesResult.reason.message
+          : "Failed to load units";
+      errorMessage = errorMessage
+        ? `${errorMessage}. ${propertiesMsg}`
+        : propertiesMsg;
+    }
+
+    setLoadError(errorMessage);
+    setPlanLoading(false);
+    setListLoading(false);
   }, [loadProperties]);
+
+  useEffect(() => {
+    void runPageLoad();
+  }, [runPageLoad]);
 
   const atStarterUnitLimit =
     userPlan !== null &&
@@ -218,6 +290,58 @@ export default function AddUnitPage() {
       });
     } finally {
       setIsListActionLoading(false);
+    }
+  }
+
+  function updateIcalDraft(
+    propertyId: string,
+    field: keyof IcalDraft,
+    value: string,
+  ) {
+    setIcalDrafts((prev) => ({
+      ...prev,
+      [propertyId]: {
+        airbnb: prev[propertyId]?.airbnb ?? "",
+        booking: prev[propertyId]?.booking ?? "",
+        [field]: value,
+      },
+    }));
+  }
+
+  async function handleSaveIcalUrls(propertyId: string) {
+    const draft = icalDrafts[propertyId];
+    if (!draft) return;
+
+    setSavingIcalId(propertyId);
+
+    try {
+      const workspaceId = await getWorkspaceId();
+      const { error } = await supabase
+        .from("properties")
+        .update({
+          airbnb_ical_url: draft.airbnb.trim() || null,
+          booking_ical_url: draft.booking.trim() || null,
+        })
+        .eq("id", propertyId)
+        .eq("workspace_id", workspaceId);
+
+      if (error) {
+        setToast({
+          message: error.message || "Failed to save iCal URLs",
+          type: "error",
+        });
+        return;
+      }
+
+      await loadProperties();
+      setToast({ message: "iCal URLs saved", type: "success" });
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "Failed to save iCal URLs",
+        type: "error",
+      });
+    } finally {
+      setSavingIcalId(null);
     }
   }
 
@@ -335,6 +459,18 @@ export default function AddUnitPage() {
           />
           <p className="mt-3 text-sm text-muted">Loading…</p>
         </div>
+      ) : loadError && properties.length === 0 ? (
+        <div className="mt-8 rounded-xl border border-red-500/50 bg-red-500/15 px-4 py-6">
+          <h2 className="font-display text-xl text-red-300">Could not load units</h2>
+          <p className="mt-2 text-sm text-red-300/90">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void runPageLoad()}
+            className="mt-4 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:border-accent"
+          >
+            Try again
+          </button>
+        </div>
       ) : atStarterUnitLimit ? (
         <div className="mt-8 rounded-xl border border-accent/40 bg-[var(--accent-muted)] px-4 py-6">
           <h2 className="font-display text-xl text-text">Unit limit reached</h2>
@@ -376,10 +512,18 @@ export default function AddUnitPage() {
         </form>
       )}
 
-      {!planLoading && (
+      {loadError && properties.length > 0 && (
+        <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          {loadError}
+        </div>
+      )}
+
+      {!planLoading && !listLoading && (
       <section className="mt-10">
         <h2 className="font-display text-xl text-text">Your Units</h2>
-        <p className="mt-1 text-sm text-muted">Rename or remove existing properties</p>
+        <p className="mt-1 text-sm text-muted">
+          Manage units, iCal feeds, rename, or remove properties
+        </p>
 
         {listLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
@@ -434,33 +578,85 @@ export default function AddUnitPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="min-w-0 flex-1 font-semibold text-text">
-                      {unit.name}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => startInlineEdit(unit)}
-                      disabled={isListActionLoading}
-                      className={rowActionClass}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDeleteConfirm({
-                          propertyId: unit.id,
-                          name: unit.name,
-                        });
-                        cancelInlineEdit();
-                      }}
-                      disabled={isListActionLoading}
-                      className={rowDeleteClass}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 flex-1 font-semibold text-text">
+                        {unit.name}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => startInlineEdit(unit)}
+                        disabled={isListActionLoading || savingIcalId !== null}
+                        className={rowActionClass}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteConfirm({
+                            propertyId: unit.id,
+                            name: unit.name,
+                          });
+                          cancelInlineEdit();
+                        }}
+                        disabled={isListActionLoading || savingIcalId !== null}
+                        className={rowDeleteClass}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <div className="mt-3 space-y-3 border-t border-border pt-3">
+                      <div>
+                        <label
+                          htmlFor={`airbnb-ical-${unit.id}`}
+                          className="mb-1 block text-xs font-medium text-muted"
+                        >
+                          Airbnb iCal URL
+                        </label>
+                        <input
+                          id={`airbnb-ical-${unit.id}`}
+                          type="url"
+                          value={icalDrafts[unit.id]?.airbnb ?? ""}
+                          onChange={(e) =>
+                            updateIcalDraft(unit.id, "airbnb", e.target.value)
+                          }
+                          placeholder="https://..."
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor={`booking-ical-${unit.id}`}
+                          className="mb-1 block text-xs font-medium text-muted"
+                        >
+                          Booking.com iCal URL
+                        </label>
+                        <input
+                          id={`booking-ical-${unit.id}`}
+                          type="url"
+                          value={icalDrafts[unit.id]?.booking ?? ""}
+                          onChange={(e) =>
+                            updateIcalDraft(unit.id, "booking", e.target.value)
+                          }
+                          placeholder="https://..."
+                          className={inputClass}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveIcalUrls(unit.id)}
+                        disabled={
+                          savingIcalId === unit.id ||
+                          isListActionLoading ||
+                          editingId !== null
+                        }
+                        className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover disabled:opacity-60"
+                      >
+                        {savingIcalId === unit.id ? "Saving…" : "Save"}
+                      </button>
+                    </div>
+                  </>
                 )}
               </li>
             ))}

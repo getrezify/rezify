@@ -8,6 +8,8 @@ create table if not exists public.workspaces (
   owner_id uuid not null references auth.users (id) on delete cascade,
   name text not null default 'My Portfolio',
   whatsapp_number text,
+  airbnb_ical_url text,
+  booking_ical_url text,
   plan text not null default 'starter' check (plan in ('starter', 'pro')),
   created_at timestamptz not null default now(),
   constraint workspaces_owner_id_unique unique (owner_id)
