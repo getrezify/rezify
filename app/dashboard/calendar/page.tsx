@@ -42,8 +42,20 @@ type Reservation = {
   checkOut: string;
   status: string | null;
   source: BookingSource;
+  dbSource: string;
   price: number;
   currency: Currency;
+};
+
+type BlockTarget = {
+  propertyId: string;
+  unitName: string;
+  checkIn: string;
+};
+
+type EmptyDayTap = {
+  property: Property;
+  dayIso: string;
 };
 
 type DayColumn = {
@@ -179,7 +191,16 @@ function formatPrice(price: number, currency: Currency) {
 }
 
 function mapRow(row: DbReservation): Reservation | null {
-  if (!isBookingSource(row.source)) return null;
+  const dbSource = row.source;
+  let source: BookingSource;
+  if (dbSource === "direct") {
+    source = "offline";
+  } else if (!isBookingSource(dbSource)) {
+    return null;
+  } else {
+    source = dbSource;
+  }
+
   return {
     id: row.id,
     propertyId: row.property_id,
@@ -187,10 +208,43 @@ function mapRow(row: DbReservation): Reservation | null {
     checkIn: row.check_in,
     checkOut: row.check_out,
     status: row.status ?? null,
-    source: row.source,
+    source,
+    dbSource,
     price: Number(row.total_price),
     currency: row.currency === "USD" ? "USD" : "EGP",
   };
+}
+
+function isBlockedReservation(reservation: Reservation): boolean {
+  return (
+    reservation.guestName === "Blocked" ||
+    (reservation.dbSource === "direct" && reservation.price === 0)
+  );
+}
+
+function eachNight(checkIn: string, checkOut: string) {
+  const nights: string[] = [];
+  const cur = parseDate(checkIn);
+  const end = parseDate(checkOut);
+  while (cur < end) {
+    nights.push(toISODate(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return nights;
+}
+
+function isNightOccupied(dayIso: string, reservations: Reservation[]): boolean {
+  for (const r of reservations) {
+    if (isCancelled(r.status)) continue;
+    if (eachNight(r.checkIn, r.checkOut).includes(dayIso)) return true;
+  }
+  return false;
+}
+
+function addDaysIso(iso: string, days: number) {
+  const d = parseDate(iso);
+  d.setDate(d.getDate() + days);
+  return toISODate(d);
 }
 
 function getBarLayout(
@@ -286,12 +340,14 @@ function UnitTimelineRow({
   timelineWidth,
   reservations,
   onSelect,
+  onEmptyDay,
 }: {
   property: Property;
   days: DayColumn[];
   timelineWidth: number;
   reservations: Reservation[];
   onSelect: (booking: SelectedBooking) => void;
+  onEmptyDay: (tap: EmptyDayTap) => void;
 }) {
   const monthKey = days[0]?.iso.slice(0, 7) ?? "";
 
@@ -325,17 +381,31 @@ function UnitTimelineRow({
       >
         <TodayHighlights days={days} />
 
-        <div
-          className="pointer-events-none absolute inset-0 flex"
-          aria-hidden
-        >
-          {days.map((day) => (
-            <div
-              key={day.iso}
-              className="shrink-0 border-r border-border/20 last:border-r-0"
-              style={{ width: DAY_COL_WIDTH }}
-            />
-          ))}
+        <div className="absolute inset-0 flex">
+          {days.map((day) => {
+            const occupied = isNightOccupied(day.iso, reservations);
+            return (
+              <button
+                key={day.iso}
+                type="button"
+                disabled={occupied}
+                aria-label={
+                  occupied
+                    ? undefined
+                    : `Block ${day.iso} for ${property.name}`
+                }
+                onClick={() =>
+                  onEmptyDay({ property, dayIso: day.iso })
+                }
+                className={`shrink-0 border-r border-border/20 last:border-r-0 ${
+                  occupied
+                    ? "cursor-default"
+                    : "z-[5] cursor-pointer hover:bg-white/5"
+                }`}
+                style={{ width: DAY_COL_WIDTH, height: ROW_HEIGHT }}
+              />
+            );
+          })}
         </div>
 
         {barLayouts.map((bar) => (
@@ -379,12 +449,17 @@ function UnitTimelineRow({
 function BookingSheet({
   booking,
   onClose,
+  onUnblock,
+  isUnblocking,
 }: {
   booking: SelectedBooking;
   onClose: () => void;
+  onUnblock?: () => void;
+  isUnblocking?: boolean;
 }) {
   const { reservation, unitName } = booking;
   const nights = calculateNights(reservation.checkIn, reservation.checkOut);
+  const blocked = isBlockedReservation(reservation);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -452,13 +527,150 @@ function BookingSheet({
           </div>
         </dl>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 w-full rounded-lg border border-border bg-background py-3 text-sm font-semibold text-text transition-colors hover:border-accent/40 hover:text-accent"
-        >
-          Close
-        </button>
+        <div className="mt-6 space-y-2">
+          {blocked && onUnblock && (
+            <button
+              type="button"
+              onClick={onUnblock}
+              disabled={isUnblocking}
+              className="w-full rounded-lg border border-red-500/50 bg-red-500/15 py-3 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+            >
+              {isUnblocking ? "Unblocking…" : "Unblock"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isUnblocking}
+            className="w-full rounded-lg border border-border bg-background py-3 text-sm font-semibold text-text transition-colors hover:border-accent/40 hover:text-accent disabled:opacity-60"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function BlockSheet({
+  target,
+  onClose,
+  onBlock,
+  isSaving,
+}: {
+  target: BlockTarget;
+  onClose: () => void;
+  onBlock: (checkOut: string, reason: string) => void;
+  isSaving: boolean;
+}) {
+  const [checkOut, setCheckOut] = useState("");
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !isSaving) onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, isSaving]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!checkOut || checkOut <= target.checkIn) return;
+    onBlock(checkOut, reason);
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[110] flex flex-col justify-end">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/60"
+        aria-label="Close"
+        onClick={onClose}
+        disabled={isSaving}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="block-dates-title"
+        className="animate-toast-slide-up relative z-10 rounded-t-2xl border-t border-border bg-surface px-5 pb-8 pt-5 shadow-[0_-16px_48px_rgba(0,0,0,0.5)]"
+      >
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
+
+        <h2 id="block-dates-title" className="font-display text-xl text-text">
+          Block Dates
+        </h2>
+        <p className="mt-1 text-sm font-medium text-accent">{target.unitName}</p>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <div>
+            <label htmlFor="block-check-in" className={labelClass}>
+              Check-in
+            </label>
+            <input
+              id="block-check-in"
+              type="date"
+              value={target.checkIn}
+              readOnly
+              className={`${inputClass} [color-scheme:dark] opacity-80`}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="block-check-out" className={labelClass}>
+              Check-out
+            </label>
+            <input
+              id="block-check-out"
+              type="date"
+              value={checkOut}
+              min={addDaysIso(target.checkIn, 1)}
+              onChange={(e) => setCheckOut(e.target.value)}
+              required
+              className={`${inputClass} [color-scheme:dark]`}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="block-reason" className={labelClass}>
+              Reason <span className="font-normal text-muted">(optional)</span>
+            </label>
+            <input
+              id="block-reason"
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Maintenance, Personal use"
+              className={inputClass}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSaving || !checkOut || checkOut <= target.checkIn}
+            className="w-full rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? "Blocking…" : "Block Dates"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="w-full rounded-lg border border-border bg-background py-3 text-sm font-semibold text-text transition-colors hover:border-muted disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </form>
       </div>
     </div>,
     document.body,
@@ -475,12 +687,14 @@ function MasterCalendar({
   days,
   byProperty,
   onSelectBooking,
+  onEmptyDay,
   scrollRef,
 }: {
   properties: Property[];
   days: DayColumn[];
   byProperty: Map<string, Reservation[]>;
   onSelectBooking: (booking: SelectedBooking) => void;
+  onEmptyDay: (tap: EmptyDayTap) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
   const timelineWidth = days.length * DAY_COL_WIDTH;
@@ -517,6 +731,7 @@ function MasterCalendar({
               timelineWidth={timelineWidth}
               reservations={byProperty.get(property.id) ?? []}
               onSelect={onSelectBooking}
+              onEmptyDay={onEmptyDay}
             />
           ))}
         </div>
@@ -547,6 +762,9 @@ export default function CalendarPage() {
   const [selectedBooking, setSelectedBooking] = useState<SelectedBooking | null>(
     null,
   );
+  const [blockTarget, setBlockTarget] = useState<BlockTarget | null>(null);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [isUnblocking, setIsUnblocking] = useState(false);
 
   const [unitQuery, setUnitQuery] = useState("");
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
@@ -739,6 +957,76 @@ export default function CalendarPage() {
     }
   }
 
+  function handleEmptyDayTap({ property, dayIso }: EmptyDayTap) {
+    setBlockTarget({
+      propertyId: property.id,
+      unitName: property.name,
+      checkIn: dayIso,
+    });
+  }
+
+  async function handleBlockDates(checkOut: string, reason: string) {
+    if (!blockTarget) return;
+
+    setIsBlocking(true);
+
+    try {
+      const workspaceId = await getWorkspaceId();
+      const guestName = reason.trim() || "Blocked";
+
+      const { error } = await supabase.from("reservations").insert({
+        workspace_id: workspaceId,
+        property_id: blockTarget.propertyId,
+        check_in: blockTarget.checkIn,
+        check_out: checkOut,
+        guest_name: guestName,
+        source: "direct",
+        status: "confirmed",
+        total_price: 0,
+        currency: "EGP",
+      });
+
+      if (error) {
+        setError(error.message || "Failed to block dates");
+        return;
+      }
+
+      setBlockTarget(null);
+      await loadReservations(monthKey);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to block dates");
+    } finally {
+      setIsBlocking(false);
+    }
+  }
+
+  async function handleUnblock() {
+    if (!selectedBooking) return;
+
+    setIsUnblocking(true);
+
+    try {
+      const workspaceId = await getWorkspaceId();
+      const { error } = await supabase
+        .from("reservations")
+        .delete()
+        .eq("id", selectedBooking.reservation.id)
+        .eq("workspace_id", workspaceId);
+
+      if (error) {
+        setError(error.message || "Failed to unblock dates");
+        return;
+      }
+
+      setSelectedBooking(null);
+      await loadReservations(monthKey);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to unblock dates");
+    } finally {
+      setIsUnblocking(false);
+    }
+  }
+
   const showCalendar =
     !isLoading &&
     properties.length > 0 &&
@@ -891,6 +1179,7 @@ export default function CalendarPage() {
           days={visibleDays}
           byProperty={byProperty}
           onSelectBooking={setSelectedBooking}
+          onEmptyDay={handleEmptyDayTap}
         />
       ) : null}
 
@@ -915,10 +1204,25 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {blockTarget && (
+        <BlockSheet
+          target={blockTarget}
+          onClose={() => !isBlocking && setBlockTarget(null)}
+          onBlock={handleBlockDates}
+          isSaving={isBlocking}
+        />
+      )}
+
       {selectedBooking && (
         <BookingSheet
           booking={selectedBooking}
-          onClose={() => setSelectedBooking(null)}
+          onClose={() => !isUnblocking && setSelectedBooking(null)}
+          onUnblock={
+            isBlockedReservation(selectedBooking.reservation)
+              ? handleUnblock
+              : undefined
+          }
+          isUnblocking={isUnblocking}
         />
       )}
     </div>
