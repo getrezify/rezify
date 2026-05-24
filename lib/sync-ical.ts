@@ -1,4 +1,5 @@
 import { parseIcsEvents } from "@/lib/ical";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type PropertyRow = {
@@ -31,30 +32,6 @@ async function fetchIcs(url: string): Promise<string> {
   }
 
   return res.text();
-}
-
-async function hasOverlappingReservation(
-  client: SupabaseClient,
-  workspaceId: string,
-  propertyId: string,
-  checkIn: string,
-  checkOut: string,
-): Promise<boolean> {
-  const { data, error } = await client
-    .from("reservations")
-    .select("id")
-    .eq("workspace_id", workspaceId)
-    .eq("property_id", propertyId)
-    .or("status.neq.cancelled,status.is.null")
-    .lt("check_in", checkOut)
-    .gt("check_out", checkIn)
-    .limit(1);
-
-  if (error) {
-    throw new Error(error.message || "Failed to check existing reservations");
-  }
-
-  return (data?.length ?? 0) > 0;
 }
 
 /**
@@ -93,15 +70,57 @@ export async function syncWorkspaceIcal(
         const events = parseIcsEvents(icsText);
 
         for (const event of events) {
-          const exists = await hasOverlappingReservation(
-            client,
-            workspaceId,
-            property.id,
-            event.checkIn,
-            event.checkOut,
-          );
+          const { data: overlapping } = await client
+            .from("reservations")
+            .select("id, source, guest_name, check_in, check_out")
+            .eq("workspace_id", workspaceId)
+            .eq("property_id", property.id)
+            .or("status.neq.cancelled,status.is.null")
+            .lt("check_in", event.checkOut)
+            .gt("check_out", event.checkIn)
+            .limit(1);
 
-          if (exists) {
+          if (overlapping && overlapping.length > 0) {
+            const existing = overlapping[0];
+            if (existing.source !== feed.source) {
+              try {
+                const { data: workspace } = await client
+                  .from("workspaces")
+                  .select("whatsapp_number")
+                  .eq("id", workspaceId)
+                  .single();
+
+                const whatsappNumber = workspace?.whatsapp_number;
+                if (whatsappNumber) {
+                  const formatDate = (iso: string) =>
+                    new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+
+                  const alertBody = [
+                    "⚠️ *Booking Conflict Detected*",
+                    "",
+                    `🏠 *Unit:* ${property.name}`,
+                    "",
+                    `📌 *Booking 1 (${existing.source}):* ${existing.guest_name}`,
+                    `📅 ${formatDate(existing.check_in)} → ${formatDate(existing.check_out)}`,
+                    "",
+                    `📌 *Booking 2 (${feed.source}):* ${event.summary}`,
+                    `📅 ${formatDate(event.checkIn)} → ${formatDate(event.checkOut)}`,
+                    "",
+                    "🚨 Please resolve this conflict immediately!",
+                  ].join("\n");
+
+                  await sendWhatsAppMessage(whatsappNumber, alertBody);
+                }
+              } catch (alertErr) {
+                errors.push(
+                  `Conflict alert failed for ${property.name}: ${alertErr instanceof Error ? alertErr.message : "unknown"}`,
+                );
+              }
+            }
             skipped += 1;
             continue;
           }
