@@ -15,6 +15,11 @@ import { createPortal } from "react-dom";
 
 type Currency = "EGP" | "USD";
 
+type UnitOption = {
+  id: string;
+  name: string;
+};
+
 type Reservation = {
   id: string;
   unitName: string;
@@ -79,7 +84,7 @@ export default function ManageReservationPage() {
   const [unitQuery, setUnitQuery] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
   const [unitOpen, setUnitOpen] = useState(false);
-  const [unitOptions, setUnitOptions] = useState<string[]>([]);
+  const [unitOptions, setUnitOptions] = useState<UnitOption[]>([]);
   const [checkIn, setCheckIn] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [reservation, setReservation] = useState<Reservation | null>(null);
@@ -103,14 +108,16 @@ export default function ManageReservationPage() {
   const filteredUnits = useMemo(() => {
     const q = unitQuery.trim().toLowerCase();
     if (!q) return unitOptions;
-    return unitOptions.filter((unit) => unit.toLowerCase().includes(q));
+    return unitOptions.filter((unit) =>
+      unit.name.toLowerCase().includes(q),
+    );
   }, [unitQuery, unitOptions]);
 
   const loadUnitOptions = useCallback(async () => {
     const workspaceId = await getWorkspaceId();
     const { data: units, error } = await supabase
       .from("properties")
-      .select("name")
+      .select("id, name")
       .eq("workspace_id", workspaceId)
       .order("name");
 
@@ -120,7 +127,12 @@ export default function ManageReservationPage() {
     }
 
     setUnitOptions(
-      units.map((row) => row.name as string).filter((name) => name?.trim()),
+      units
+        .map((row) => ({
+          id: row.id as string,
+          name: (row.name as string)?.trim() ?? "",
+        }))
+        .filter((unit) => unit.id && unit.name),
     );
   }, []);
 
@@ -178,9 +190,9 @@ export default function ManageReservationPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  function handleSelectUnit(unit: string) {
-    setSelectedUnit(unit);
-    setUnitQuery(unit);
+  function handleSelectUnit(unit: UnitOption) {
+    setSelectedUnit(unit.name);
+    setUnitQuery(unit.name);
     setUnitOpen(false);
   }
 
@@ -385,17 +397,17 @@ export default function ManageReservationPage() {
                 <li className="px-4 py-3 text-sm text-muted">No units found</li>
               ) : (
                 filteredUnits.map((unit) => (
-                  <li key={unit}>
+                  <li key={unit.id || unit.name}>
                     <button
                       type="button"
                       onClick={() => handleSelectUnit(unit)}
                       className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-background ${
-                        selectedUnit === unit
+                        selectedUnit === unit.name
                           ? "bg-[var(--accent-muted)] text-accent"
                           : "text-text"
                       }`}
                     >
-                      {unit}
+                      {unit.name}
                     </button>
                   </li>
                 ))
