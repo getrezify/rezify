@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createAuthedClient } from "@/lib/supabase-auth";
 import { getWorkspaceId } from "@/lib/workspace";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";

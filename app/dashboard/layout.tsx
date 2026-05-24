@@ -13,15 +13,10 @@ const tabs = [
   { href: "/dashboard/add", label: "Add", Icon: PlusCircleIcon },
   { href: "/dashboard/manage", label: "Manage", Icon: EditIcon },
   { href: "/dashboard/history", label: "History", Icon: HistoryIcon },
-  { href: "/dashboard/units", label: "Units", Icon: GridIcon },
-  { href: "/dashboard/units/add", label: "Add Unit", Icon: AddUnitIcon },
+  { href: "/dashboard/units", label: "Financials", Icon: GridIcon },
+  { href: "/dashboard/properties", label: "Properties", Icon: AddUnitIcon },
   { href: "/dashboard/calendar", label: "Calendar", Icon: CalendarGridIcon },
-  {
-    href: "/dashboard/channels",
-    label: "Channels",
-    Icon: ChannelsIcon,
-    proOnly: true,
-  },
+  { href: "/dashboard/channels", label: "Sync", Icon: ChannelsIcon },
   { href: "/dashboard/settings", label: "Settings", Icon: SettingsIcon },
 ] as const;
 
@@ -30,6 +25,7 @@ type Tab = (typeof tabs)[number];
 function isTabActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
   if (href === "/dashboard/units") return pathname === "/dashboard/units";
+  if (href === "/dashboard/properties") return pathname === "/dashboard/properties";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -108,13 +104,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, [router]);
-
-  useEffect(() => {
-    if (userPlan === null) return;
-    if (userPlan === "starter" && pathname.startsWith("/dashboard/channels")) {
-      router.replace("/dashboard/upgrade");
-    }
-  }, [userPlan, pathname, router]);
 
   useEffect(() => {
     if (!menuOpen) return;
