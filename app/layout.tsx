@@ -15,6 +15,7 @@ const dmSerifDisplay = DM_Serif_Display({
 
 export const metadata: Metadata = {
   title: "Rezify",
+  manifest: "/manifest.json",
   description: "Property management, simplified",
 };
 
@@ -32,3 +33,4 @@ export default function RootLayout({
     </html>
   );
 }
+

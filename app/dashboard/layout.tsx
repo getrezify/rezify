@@ -59,60 +59,57 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    async function checkAuth() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    let mounted = true;
+
+    async function boot() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
 
       if (!session) {
         router.replace("/signin");
         return;
       }
 
+      // Show the UI immediately — don't wait for plan
       setUserEmail(session.user.email ?? "");
       setAuthReady(true);
 
+      // Load plan in background
       try {
-        setUserPlan(await getUserPlan());
+        const plan = await getUserPlan();
+        if (mounted) setUserPlan(plan);
       } catch {
-        setUserPlan("starter");
+        if (mounted) setUserPlan("starter");
       }
     }
 
-    checkAuth();
+    void boot();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      clearWorkspaceCache();
-      clearPlanCache();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
       if (!session) {
+        clearWorkspaceCache();
+        clearPlanCache();
         setAuthReady(false);
         setUserEmail("");
         setUserPlan(null);
         setMenuOpen(false);
         router.replace("/signin");
-      } else {
-        setUserEmail(session.user.email ?? "");
-        try {
-          setUserPlan(await getUserPlan());
-        } catch {
-          setUserPlan("starter");
-        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   useEffect(() => {
     if (!menuOpen) return;
-
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current?.contains(e.target as Node)) return;
       setMenuOpen(false);
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
@@ -130,10 +127,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (!authReady) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent"
-          aria-hidden
-        />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" aria-hidden />
       </div>
     );
   }
@@ -146,13 +140,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             Rezify
           </Link>
           <div className="flex items-center gap-3">
-            <time
-              className="text-xs text-muted"
-              {...(headerDate ? { dateTime: new Date().toISOString() } : {})}
-            >
+            <time className="text-xs text-muted" {...(headerDate ? { dateTime: new Date().toISOString() } : {})}>
               {headerDate}
             </time>
-
             <div className="relative" ref={menuRef}>
               <button
                 type="button"
@@ -164,15 +154,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               >
                 {avatarLetter}
               </button>
-
               {menuOpen && (
                 <div
                   role="menu"
                   className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
                 >
-                  <p className="truncate px-3 py-2 text-xs text-muted">
-                    {userEmail}
-                  </p>
+                  <p className="truncate px-3 py-2 text-xs text-muted">{userEmail}</p>
                   <div className="mx-2 border-t border-border" />
                   <button
                     type="button"
@@ -181,7 +168,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     disabled={isSigningOut}
                     className="w-full px-3 py-2 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10 disabled:opacity-60"
                   >
-                    {isSigningOut ? "Signing out…" : "Sign Out"}
+                    {isSigningOut ? "Signing out..." : "Sign Out"}
                   </button>
                 </div>
               )}
@@ -195,25 +182,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-border bg-surface/95 backdrop-blur-sm">
         <div className="overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
           <ul className="flex items-stretch justify-around px-0.5 py-2">
-          {visibleTabs.map(({ href, label, Icon }) => {
-            const isActive = isTabActive(pathname, href);
-
-            return (
-              <li key={href} className="flex-1">
-                <Link
-                  href={href}
-                  className={`flex min-w-[3.25rem] flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium transition-colors sm:text-[10px] ${
-                    isActive ? "text-accent" : "text-muted hover:text-text"
-                  }`}
-                >
-                  <Icon
-                    className={`h-5 w-5 ${isActive ? "text-accent" : "text-muted"}`}
-                  />
-                  <span>{label}</span>
-                </Link>
-              </li>
-            );
-          })}
+            {visibleTabs.map(({ href, label, Icon }) => {
+              const isActive = isTabActive(pathname, href);
+              return (
+                <li key={href} className="flex-1">
+                  <Link
+                    href={href}
+                    className={`flex min-w-[3.25rem] flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium transition-colors sm:text-[10px] ${
+                      isActive ? "text-accent" : "text-muted hover:text-text"
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 ${isActive ? "text-accent" : "text-muted"}`} />
+                    <span>{label}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </nav>
@@ -224,39 +208,31 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 function ClockIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
-
 function CalendarIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M3 10h18M8 3v4M16 3v4" strokeLinecap="round" />
+      <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" strokeLinecap="round" />
     </svg>
   );
 }
-
 function PlusCircleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v8M8 12h8" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" strokeLinecap="round" />
     </svg>
   );
 }
-
 function EditIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <path d="M4 20h4l10-10-4-4L4 16v4z" strokeLinejoin="round" />
-      <path d="M13.5 6.5l4 4" strokeLinecap="round" />
+      <path d="M4 20h4l10-10-4-4L4 16v4z" strokeLinejoin="round" /><path d="M13.5 6.5l4 4" strokeLinecap="round" />
     </svg>
   );
 }
-
 function HistoryIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
@@ -266,27 +242,21 @@ function HistoryIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
 function GridIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>
   );
 }
-
 function AddUnitIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <rect x="5" y="5" width="14" height="14" rx="2" />
-      <path d="M12 9v6M9 12h6" strokeLinecap="round" />
+      <rect x="5" y="5" width="14" height="14" rx="2" /><path d="M12 9v6M9 12h6" strokeLinecap="round" />
     </svg>
   );
 }
-
 function CalendarGridIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -299,41 +269,19 @@ function CalendarGridIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
 function ChannelsIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      aria-hidden
-    >
-      <path
-        d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66"
-        strokeLinecap="round"
-      />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <path d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66" strokeLinecap="round" />
       <path d="M16 4h4v4M8 20H4v-4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
-
 function SettingsIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      aria-hidden
-    >
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
       <circle cx="12" cy="12" r="3" />
-      <path
-        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-        strokeLinecap="round"
-      />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" strokeLinecap="round" />
     </svg>
   );
 }
