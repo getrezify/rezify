@@ -115,8 +115,10 @@ export default function OnboardingPage() {
       const user = await getAuthenticatedUser();
       const { error } = await supabase
         .from("workspaces")
-        .update({ name })
-        .eq("owner_id", user.id);
+        .upsert(
+          { owner_id: user.id, name, slug: user.id, plan: "starter" },
+          { onConflict: "owner_id" }
+        );
 
       if (error) {
         setToast(error.message || "Failed to save workspace");
@@ -468,3 +470,4 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
