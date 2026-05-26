@@ -3,7 +3,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
 import { getWorkspaceId } from "@/lib/workspace";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type StayCard = { id: string; unitName: string; guestName: string; nightsInfo: string };
 type DbReservation = { id: string; guest_name: string; check_in: string; check_out: string; properties?: { name: string } | null };
@@ -12,7 +12,6 @@ function getTomorrowISO() {
   const d = new Date(); d.setDate(d.getDate() + 1);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
-function getTomorrowDate() { const d = new Date(); d.setDate(d.getDate()+1); return d; }
 function calculateNights(ci: string, co: string) {
   const n = Math.round((new Date(`${co}T12:00:00`).getTime()-new Date(`${ci}T12:00:00`).getTime())/(1000*60*60*24));
   return n > 0 ? n : 0;
@@ -20,71 +19,131 @@ function calculateNights(ci: string, co: string) {
 function mapToStayCard(row: DbReservation, nightsInfo: string): StayCard {
   return { id: row.id, unitName: row.properties?.name ?? "Unknown unit", guestName: row.guest_name, nightsInfo };
 }
-function formatFullDate(date: Date, lang: string) {
-  return date.toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+function formatFullDate(iso: string, lang: string) {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 }
 
-export default function TomorrowPage() {
+export default function UpcomingPage() {
   const { t, lang } = useLanguage();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(getTomorrowISO());
   const [checkIns, setCheckIns] = useState<StayCard[]>([]);
   const [checkOuts, setCheckOuts] = useState<StayCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const tomorrowLabel = useMemo(() => formatFullDate(getTomorrowDate(), lang), [refreshKey, lang]);
-
-  const loadBriefing = useCallback(async () => {
+  const loadBriefing = useCallback(async (date: string) => {
     setIsLoading(true); setFetchError(null);
-    const tomorrow = getTomorrowISO();
     try {
       const workspaceId = await getWorkspaceId();
       const [ciRes, coRes] = await Promise.all([
-        supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).eq("check_in", tomorrow),
-        supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).eq("check_out", tomorrow),
+        supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).eq("check_in", date),
+        supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).eq("check_out", date),
       ]);
       setCheckIns(((ciRes.data ?? []) as DbReservation[]).map(row => {
         const n = calculateNights(row.check_in, row.check_out);
-        return mapToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("checkin_tomorrow")}`);
+        return mapToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("check_ins")}`);
       }));
       setCheckOuts(((coRes.data ?? []) as DbReservation[]).map(row => {
         const n = calculateNights(row.check_in, row.check_out);
-        return mapToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("checkout_tomorrow")}`);
+        return mapToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("check_outs")}`);
       }));
     } catch (err) {
-      setFetchError(err instanceof Error ? err.message : "Failed to load briefing");
+      setFetchError(err instanceof Error ? err.message : "Failed to load");
       setCheckIns([]); setCheckOuts([]);
     } finally { setIsLoading(false); }
   }, [t]);
 
-  useEffect(() => { loadBriefing(); }, [loadBriefing, refreshKey]);
+  useEffect(() => { loadBriefing(selectedDate); }, [loadBriefing, selectedDate]);
+
+  const totalCount = checkIns.length + checkOuts.length;
 
   return (
-    <div className="animate-fade-up space-y-8 pb-4">
-      <header className="flex items-start justify-between gap-4 pt-4">
-        <div>
-          <h1 className="font-display text-3xl text-text">{t("tomorrow")}</h1>
-          <p className="mt-1 text-sm text-muted">{tomorrowLabel}</p>
-        </div>
-        <button type="button" onClick={() => setRefreshKey(k => k+1)} disabled={isLoading} className="shrink-0 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-text transition-colors hover:border-accent hover:text-accent disabled:opacity-50">
-          {t("refresh")}
-        </button>
+    <div className="animate-fade-up space-y-6 pb-4">
+      <header className="pt-4">
+        <h1 className="font-display text-3xl text-text">{lang === "ar" ? "القادم" : "Upcoming"}</h1>
+        <p className="mt-1 text-sm text-muted">{formatFullDate(selectedDate, lang)}</p>
       </header>
+
+      {/* Date picker */}
+      <div className="flex items-center gap-3">
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={e => setSelectedDate(e.target.value)}
+          className="flex-1 rounded-lg border border-border bg-background px-4 py-3 text-sm text-text transition-colors focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)] [color-scheme:dark]"
+        />
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              const d = new Date(`${selectedDate}T12:00:00`);
+              d.setDate(d.getDate() - 1);
+              setSelectedDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-text transition-colors hover:border-accent hover:text-accent"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const d = new Date(`${selectedDate}T12:00:00`);
+              d.setDate(d.getDate() + 1);
+              setSelectedDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-text transition-colors hover:border-accent hover:text-accent"
+          >
+            →
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSelectedDate(getTomorrowISO())}
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent"
+        >
+          {lang === "ar" ? "غداً" : "Tomorrow"}
+        </button>
+      </div>
+
+      {/* Summary badge */}
+      {!isLoading && !fetchError && (
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${totalCount > 0 ? "bg-accent/15 text-accent" : "bg-border text-muted"}`}>
+            {totalCount} {totalCount === 1 ? (lang === "ar" ? "حجز" : "booking") : (lang === "ar" ? "حجوزات" : "bookings")}
+          </span>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" aria-hidden />
-          <p className="mt-3 text-sm text-muted">{t("loading_tomorrow")}</p>
+          <p className="mt-3 text-sm text-muted">{lang === "ar" ? "جاري التحميل..." : "Loading..."}</p>
         </div>
       ) : fetchError ? (
         <div className="rounded-xl border border-dashed border-red-500/40 bg-red-500/10 px-4 py-10 text-center">
           <p className="text-sm text-red-300">{fetchError}</p>
         </div>
       ) : (
-        <>
-          <BriefingSection title={t("check_ins")} dotClassName="bg-emerald-500" badgeClassName="bg-emerald-500/15 text-emerald-400" borderClassName="border-l-emerald-500" items={checkIns} emptyEmoji="📋" emptyMessage={t("no_checkins_tomorrow")} />
-          <BriefingSection title={t("check_outs")} dotClassName="bg-red-500" badgeClassName="bg-red-500/15 text-red-400" borderClassName="border-l-red-500" items={checkOuts} emptyEmoji="👋" emptyMessage={t("no_checkouts_tomorrow")} />
-        </>
+        <div className="space-y-8">
+          <BriefingSection
+            title={t("check_ins")}
+            dotClassName="bg-emerald-500"
+            badgeClassName="bg-emerald-500/15 text-emerald-400"
+            borderClassName="border-s-emerald-500"
+            items={checkIns}
+            emptyEmoji="📋"
+            emptyMessage={lang === "ar" ? "لا وصول في هذا اليوم" : "No check-ins on this date"}
+          />
+          <BriefingSection
+            title={t("check_outs")}
+            dotClassName="bg-red-500"
+            badgeClassName="bg-red-500/15 text-red-400"
+            borderClassName="border-s-red-500"
+            items={checkOuts}
+            emptyEmoji="👋"
+            emptyMessage={lang === "ar" ? "لا مغادرة في هذا اليوم" : "No check-outs on this date"}
+          />
+        </div>
       )}
     </div>
   );

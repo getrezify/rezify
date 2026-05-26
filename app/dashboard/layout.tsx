@@ -45,7 +45,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
 
   const tabs = [
     { href: "/dashboard", label: t("tab_today"), Icon: ClockIcon },
-    { href: "/dashboard/tomorrow", label: t("tab_tomorrow"), Icon: CalendarIcon },
+    { href: "/dashboard/tomorrow", label: t("tab_upcoming"), Icon: CalendarIcon },
     { href: "/dashboard/add", label: t("tab_add"), Icon: PlusCircleIcon },
     { href: "/dashboard/manage", label: t("tab_manage"), Icon: EditIcon },
     { href: "/dashboard/history", label: t("tab_history"), Icon: HistoryIcon },
@@ -224,3 +224,4 @@ function ChannelsIcon({ className }: { className?: string }) {
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" strokeLinecap="round" /></svg>;
 }
+
