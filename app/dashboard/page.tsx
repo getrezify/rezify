@@ -124,7 +124,7 @@ export default function TodayPage() {
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface text-3xl">🏠</div>
           <h2 className="font-display text-xl text-text">{t("no_units_yet")}</h2>
           <p className="mt-2 max-w-xs text-sm text-muted">{t("add_first_unit_desc")}</p>
-          <Link href="/dashboard/properties/add" className="mt-6 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover">
+          <Link href="/dashboard/properties" className="mt-6 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover">
             {t("add_first_unit")}
           </Link>
         </div>
@@ -218,4 +218,5 @@ function BriefingSection({ title, dotClassName, badgeClassName, borderClassName,
     </section>
   );
 }
+
 

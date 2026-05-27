@@ -137,7 +137,15 @@ export default function PropertiesPage() {
       ) : atLimit ? (
         <div className="mt-8 rounded-xl border border-accent/40 bg-[var(--accent-muted)] px-4 py-6">
           <h2 className="font-display text-xl text-text">Unit limit reached</h2>
-          <p className="mt-2 text-sm text-muted">Starter includes up to {STARTER_UNIT_LIMIT} units.</p>
+          <p className="mt-2 text-sm text-muted">
+            Starter plan includes up to {STARTER_UNIT_LIMIT} units for free. Upgrade to Pro or Business to add more units.
+          </p>
+          <Link
+            href="/dashboard/upgrade"
+            className="mt-4 flex w-full items-center justify-center rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover"
+          >
+            View upgrade options →
+          </Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
