@@ -1,702 +1,257 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rezify — Property management for MENA hosts</title>
-  <meta
-    name="description"
-    content="The only channel manager with WhatsApp-native notifications, Arabic support, and pricing built for operators with 5–50 units."
-  />
+  <title>Rezify — Property Management for MENA Hosts</title>
+  <meta name="description" content="The only property management app built for Airbnb and Booking.com hosts in Egypt and MENA. WhatsApp notifications, Arabic support, EGP + USD dashboard. Free for 2 units." />
+  <meta property="og:title" content="Rezify — Property Management for MENA Hosts" />
+  <meta property="og:description" content="Replace Smoobu and spreadsheets with one app built for Egypt. WhatsApp-native, Arabic-first, EGP + USD." />
+  <meta property="og:url" content="https://www.getrezify.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
-
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --gold:        #B8952A;
-      --gold-light:  #D4AE4A;
-      --gold-bg:     #F9F5EC;
-      --gold-muted:  #EDE3C8;
-      --ink:         #1A1714;
-      --ink-2:       #3D3830;
-      --ink-3:       #6B6458;
-      --stone:       #F5F2ED;
-      --stone-2:     #EDE9E3;
-      --white:       #FFFEFB;
-      --red-soft:    #FBEEEC;
-      --red-icon:    #C0533A;
-      --serif:       'DM Serif Display', Georgia, serif;
-      --sans:        'DM Sans', system-ui, sans-serif;
-      --shadow-sm:   0 1px 3px rgba(26,23,20,.06), 0 1px 2px rgba(26,23,20,.04);
-      --shadow-md:   0 4px 16px rgba(26,23,20,.08), 0 2px 6px rgba(26,23,20,.05);
-      --shadow-lg:   0 16px 48px rgba(26,23,20,.12), 0 4px 12px rgba(26,23,20,.07);
+      --gold: #B8952A; --gold-light: #D4AE4A; --gold-bg: #F9F5EC;
+      --gold-muted: #EDE3C8; --ink: #1A1714; --ink-2: #3D3830;
+      --ink-3: #6B6458; --stone: #F5F2ED; --stone-2: #EDE9E3;
+      --white: #FFFEFB; --red-soft: #FBEEEC;
+      --serif: 'DM Serif Display', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --shadow-sm: 0 1px 3px rgba(26,23,20,.06), 0 1px 2px rgba(26,23,20,.04);
+      --shadow-md: 0 4px 16px rgba(26,23,20,.08), 0 2px 6px rgba(26,23,20,.05);
+      --shadow-lg: 0 16px 48px rgba(26,23,20,.12), 0 4px 12px rgba(26,23,20,.07);
     }
-
     html { scroll-behavior: smooth; }
+    body { font-family: var(--sans); background: var(--white); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
-    body {
-      font-family: var(--sans);
-      background: var(--white);
-      color: var(--ink);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-    }
-
-    /* ─── NAV ──────────────────────────────────────── */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(255,254,251,.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(184,149,42,.12);
-      padding: 0 clamp(1.5rem, 5vw, 4rem);
-      height: 64px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-
-    .nav-logo {
-      font-family: var(--serif);
-      font-size: 1.5rem;
-      color: var(--gold);
-      text-decoration: none;
-      letter-spacing: -.01em;
-    }
-
+    /* NAV */
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,254,251,.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(184,149,42,.12); padding: 0 clamp(1.5rem, 5vw, 4rem); height: 64px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-family: var(--serif); font-size: 1.5rem; color: var(--gold); text-decoration: none; }
     .nav-actions { display: flex; align-items: center; gap: .75rem; }
+    .btn-ghost { font-family: var(--sans); font-size: .9rem; font-weight: 500; color: var(--ink-2); background: none; border: none; cursor: pointer; padding: .5rem .875rem; border-radius: 8px; transition: background .15s; text-decoration: none; }
+    .btn-ghost:hover { background: var(--stone-2); }
+    .btn-primary { font-family: var(--sans); font-size: .9rem; font-weight: 600; color: var(--white); background: var(--gold); border: none; cursor: pointer; padding: .55rem 1.1rem; border-radius: 10px; transition: background .15s, transform .1s; text-decoration: none; display: inline-block; box-shadow: 0 2px 8px rgba(184,149,42,.35); }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
 
-    .btn-ghost {
-      font-family: var(--sans); font-size: .9rem; font-weight: 500;
-      color: var(--ink-2); background: none; border: none; cursor: pointer;
-      padding: .5rem .875rem; border-radius: 8px;
-      transition: background .15s, color .15s;
-      text-decoration: none;
-    }
-    .btn-ghost:hover { background: var(--stone-2); color: var(--ink); }
-
-    .btn-primary {
-      font-family: var(--sans); font-size: .9rem; font-weight: 600;
-      color: var(--white); background: var(--gold);
-      border: none; cursor: pointer;
-      padding: .55rem 1.1rem; border-radius: 10px;
-      transition: background .15s, transform .1s, box-shadow .15s;
-      text-decoration: none; display: inline-block;
-      box-shadow: 0 2px 8px rgba(184,149,42,.35);
-    }
-    .btn-primary:hover {
-      background: var(--gold-light);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(184,149,42,.45);
-    }
-    .btn-primary:active { transform: translateY(0); }
-
-    /* ─── HERO ─────────────────────────────────────── */
-    .hero {
-      min-height: 100vh;
-      padding: 120px clamp(1.5rem, 5vw, 4rem) 80px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-      align-items: center;
-      background: var(--white);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -120px; right: -200px;
-      width: 700px; height: 700px;
-      background: radial-gradient(circle, rgba(184,149,42,.08) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .hero::after {
-      content: '';
-      position: absolute;
-      bottom: -80px; left: -100px;
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(184,149,42,.05) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
+    /* HERO */
+    .hero { min-height: 100vh; padding: 120px clamp(1.5rem, 5vw, 4rem) 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; background: var(--white); position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; top: -120px; right: -200px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(184,149,42,.08) 0%, transparent 70%); pointer-events: none; }
     .hero-content { position: relative; z-index: 1; }
-
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: .5rem;
-      font-size: .78rem; font-weight: 600; letter-spacing: .1em;
-      text-transform: uppercase; color: var(--gold);
-      background: var(--gold-bg);
-      border: 1px solid var(--gold-muted);
-      padding: .35rem .85rem; border-radius: 99px;
-      margin-bottom: 1.5rem;
-    }
-    .hero-eyebrow::before { content: '●'; font-size: .5rem; }
-
-    h1.hero-headline {
-      font-family: var(--serif);
-      font-size: clamp(2.4rem, 4.5vw, 3.6rem);
-      line-height: 1.1;
-      color: var(--ink);
-      letter-spacing: -.02em;
-      margin-bottom: 1.25rem;
-    }
-    h1.hero-headline em {
-      font-style: italic;
-      color: var(--gold);
-    }
-
-    .hero-sub {
-      font-size: clamp(.95rem, 1.5vw, 1.1rem);
-      color: var(--ink-3);
-      max-width: 480px;
-      line-height: 1.7;
-      margin-bottom: 2rem;
-    }
-
+    .hero-eyebrow { display: inline-flex; align-items: center; gap: .5rem; font-size: .78rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-muted); padding: .35rem .85rem; border-radius: 99px; margin-bottom: 1.5rem; }
+    h1.hero-headline { font-family: var(--serif); font-size: clamp(2.4rem, 4.5vw, 3.6rem); line-height: 1.1; color: var(--ink); letter-spacing: -.02em; margin-bottom: 1.25rem; }
+    h1.hero-headline em { font-style: italic; color: var(--gold); }
+    .hero-sub { font-size: clamp(.95rem, 1.5vw, 1.1rem); color: var(--ink-3); max-width: 480px; line-height: 1.7; margin-bottom: 2rem; }
     .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
-
-    .btn-outline {
-      font-family: var(--sans); font-size: .9rem; font-weight: 500;
-      color: var(--ink-2); background: var(--white);
-      border: 1.5px solid var(--stone-2); cursor: pointer;
-      padding: .55rem 1.1rem; border-radius: 10px;
-      transition: border-color .15s, background .15s;
-      text-decoration: none; display: inline-flex; align-items: center; gap: .4rem;
-    }
+    .btn-outline { font-family: var(--sans); font-size: .9rem; font-weight: 500; color: var(--ink-2); background: var(--white); border: 1.5px solid var(--stone-2); cursor: pointer; padding: .55rem 1.1rem; border-radius: 10px; transition: border-color .15s, background .15s; text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; }
     .btn-outline:hover { border-color: var(--gold-muted); background: var(--gold-bg); }
-
     .btn-outline svg { width: 14px; height: 14px; }
+    .hero-trust { margin-top: 2rem; display: flex; align-items: center; gap: .5rem; font-size: .82rem; color: var(--ink-3); }
+    .hero-trust-dot { width: 6px; height: 6px; background: #4CAF50; border-radius: 50%; box-shadow: 0 0 0 3px rgba(76,175,80,.15); }
 
-    .hero-trust {
-      margin-top: 2rem;
-      display: flex; align-items: center; gap: .5rem;
-      font-size: .82rem; color: var(--ink-3);
-    }
-    .hero-trust-dot {
-      width: 6px; height: 6px; background: #4CAF50; border-radius: 50%;
-      box-shadow: 0 0 0 3px rgba(76,175,80,.15);
-    }
+    /* SAVINGS BANNER */
+    .savings-banner { background: var(--ink); padding: 1.25rem clamp(1.5rem, 5vw, 4rem); display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; text-align: center; }
+    .savings-banner p { font-size: .95rem; color: rgba(255,255,255,.7); }
+    .savings-banner strong { color: var(--gold-light); }
+    .savings-banner-badge { background: rgba(184,149,42,.2); border: 1px solid rgba(184,149,42,.3); color: var(--gold-light); font-size: .78rem; font-weight: 600; padding: .3rem .75rem; border-radius: 99px; white-space: nowrap; }
 
-    /* ─── PHONE MOCKUP ─────────────────────────────── */
-    .hero-visual {
-      position: relative; z-index: 1;
-      display: flex; justify-content: center; align-items: center;
-    }
-
-    .mockup-wrap {
-      position: relative;
-      animation: float 6s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-12px); }
-    }
-
-    .mockup-glow {
-      position: absolute; inset: -40px;
-      background: radial-gradient(ellipse, rgba(184,149,42,.15) 0%, transparent 65%);
-      border-radius: 50%;
-      pointer-events: none;
-    }
-
-    .phone-shell {
-      width: 260px;
-      background: #0F0E0B;
-      border-radius: 40px;
-      padding: 14px;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.08),
-        0 32px 80px rgba(0,0,0,.45),
-        0 8px 24px rgba(0,0,0,.3),
-        inset 0 1px 0 rgba(255,255,255,.06);
-      position: relative;
-    }
-
-    .phone-notch {
-      width: 80px; height: 22px;
-      background: #0F0E0B;
-      border-radius: 0 0 18px 18px;
-      margin: 0 auto 6px;
-      position: relative; z-index: 2;
-    }
-
-    .phone-screen {
-      background: #18160F;
-      border-radius: 28px;
-      overflow: hidden;
-      height: 480px;
-      padding: 0;
-    }
-
-    .app-header {
-      background: #1E1B11;
-      padding: 12px 16px 10px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-    }
-    .app-logo-sm {
-      font-family: var(--serif);
-      font-size: .95rem;
-      color: var(--gold);
-    }
-    .app-tabs {
-      display: flex; gap: 0;
-      margin-top: 8px;
-    }
-    .app-tab {
-      font-size: .65rem; font-weight: 500;
-      color: rgba(255,255,255,.35);
-      padding: 4px 8px; border-radius: 6px;
-    }
-    .app-tab.active {
-      background: rgba(184,149,42,.15);
-      color: var(--gold-light);
-    }
-
+    /* PHONE MOCKUP */
+    .hero-visual { position: relative; z-index: 1; display: flex; justify-content: center; align-items: center; }
+    .mockup-wrap { position: relative; animation: float 6s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+    .mockup-glow { position: absolute; inset: -40px; background: radial-gradient(ellipse, rgba(184,149,42,.15) 0%, transparent 65%); border-radius: 50%; pointer-events: none; }
+    .phone-shell { width: 260px; background: #0F0E0B; border-radius: 40px; padding: 14px; box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 32px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06); }
+    .phone-notch { width: 80px; height: 22px; background: #0F0E0B; border-radius: 0 0 18px 18px; margin: 0 auto 6px; }
+    .phone-screen { background: #18160F; border-radius: 28px; overflow: hidden; height: 480px; }
+    .app-header { background: #1E1B11; padding: 12px 16px 10px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .app-logo-sm { font-family: var(--serif); font-size: .95rem; color: var(--gold); }
+    .app-tabs { display: flex; margin-top: 8px; }
+    .app-tab { font-size: .65rem; font-weight: 500; color: rgba(255,255,255,.35); padding: 4px 8px; border-radius: 6px; }
+    .app-tab.active { background: rgba(184,149,42,.15); color: var(--gold-light); }
     .app-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-
     .app-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .app-stat {
-      background: #242018;
-      border-radius: 10px;
-      padding: 10px;
-      border: 1px solid rgba(255,255,255,.05);
-    }
+    .app-stat { background: #242018; border-radius: 10px; padding: 10px; border: 1px solid rgba(255,255,255,.05); }
     .app-stat-label { font-size: .6rem; color: rgba(255,255,255,.35); margin-bottom: 3px; }
     .app-stat-val { font-size: 1rem; font-weight: 600; color: #fff; }
     .app-stat-val.gold { color: var(--gold-light); }
     .app-stat-sub { font-size: .58rem; color: rgba(255,255,255,.25); margin-top: 1px; }
-
-    .app-section-label {
-      font-size: .6rem; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: rgba(255,255,255,.3);
-      margin: 4px 0 2px;
-    }
-
-    .app-booking {
-      background: #242018;
-      border-radius: 10px;
-      padding: 8px 10px;
-      display: flex; align-items: center; gap: 8px;
-      border: 1px solid rgba(255,255,255,.05);
-    }
-    .app-booking-dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-    }
+    .app-section-label { font-size: .6rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.3); margin: 4px 0 2px; }
+    .app-booking { background: #242018; border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.05); }
+    .app-booking-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .app-booking-info { flex: 1; min-width: 0; }
     .app-booking-name { font-size: .7rem; font-weight: 500; color: rgba(255,255,255,.8); }
     .app-booking-unit { font-size: .58rem; color: rgba(255,255,255,.3); }
-    .app-booking-badge {
-      font-size: .58rem; font-weight: 600;
-      padding: 2px 6px; border-radius: 99px;
-    }
+    .app-booking-badge { font-size: .58rem; font-weight: 600; padding: 2px 6px; border-radius: 99px; }
     .badge-in { background: rgba(76,175,80,.15); color: #81C784; }
     .badge-out { background: rgba(255,167,38,.12); color: #FFB74D; }
     .badge-conf { background: rgba(184,149,42,.15); color: var(--gold-light); }
-
-    .app-whatsapp-pill {
-      background: rgba(37,211,102,.08);
-      border: 1px solid rgba(37,211,102,.15);
-      border-radius: 10px;
-      padding: 8px 10px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .wa-icon {
-      width: 22px; height: 22px; border-radius: 6px;
-      background: #25D366;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
+    .app-whatsapp-pill { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.15); border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; }
+    .wa-icon { width: 22px; height: 22px; border-radius: 6px; background: #25D366; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .wa-icon svg { width: 12px; height: 12px; fill: white; }
     .app-wa-text { font-size: .65rem; color: rgba(255,255,255,.6); line-height: 1.4; }
     .app-wa-bold { color: #4AE87A; font-weight: 600; }
-
-    /* floating tablet behind phone */
-    .tablet-behind {
-      position: absolute;
-      right: -60px; top: 40px;
-      width: 180px;
-      background: #18160F;
-      border-radius: 18px;
-      padding: 10px;
-      box-shadow: 0 16px 48px rgba(0,0,0,.35);
-      border: 1px solid rgba(255,255,255,.06);
-      z-index: -1;
-    }
-    .tablet-row { display: flex; flex-direction: column; gap: 5px; }
-    .tablet-cal-header {
-      font-size: .58rem; font-weight: 600;
-      color: rgba(255,255,255,.4); letter-spacing: .06em;
-      text-transform: uppercase; margin-bottom: 4px;
-    }
+    .tablet-behind { position: absolute; right: -60px; top: 40px; width: 180px; background: #18160F; border-radius: 18px; padding: 10px; box-shadow: 0 16px 48px rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.06); z-index: -1; }
+    .tablet-cal-header { font-size: .58rem; font-weight: 600; color: rgba(255,255,255,.4); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
     .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
-    .cal-cell {
-      aspect-ratio: 1; border-radius: 4px;
-      background: #242018;
-      font-size: .55rem; display: flex; align-items: center; justify-content: center;
-      color: rgba(255,255,255,.2);
-    }
+    .cal-cell { aspect-ratio: 1; border-radius: 4px; background: #242018; font-size: .55rem; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.2); }
     .cal-cell.booked { background: rgba(184,149,42,.25); color: var(--gold-light); }
     .cal-cell.today { background: var(--gold); color: white; font-weight: 700; }
     .cal-cell.partial { background: rgba(76,175,80,.2); color: #81C784; }
 
-    /* ─── SECTION SHARED ───────────────────────────── */
+    /* SECTIONS */
     section { padding: clamp(4rem, 8vw, 7rem) clamp(1.5rem, 5vw, 4rem); }
+    .section-eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin-bottom: .75rem; }
+    .section-headline { font-family: var(--serif); font-size: clamp(2rem, 3.5vw, 2.8rem); line-height: 1.15; color: var(--ink); letter-spacing: -.02em; margin-bottom: 1rem; }
+    .section-sub { font-size: 1rem; color: var(--ink-3); line-height: 1.7; max-width: 540px; }
 
-    .section-eyebrow {
-      font-size: .75rem; font-weight: 600; letter-spacing: .12em;
-      text-transform: uppercase; color: var(--gold);
-      margin-bottom: .75rem;
-    }
-
-    .section-headline {
-      font-family: var(--serif);
-      font-size: clamp(2rem, 3.5vw, 2.8rem);
-      line-height: 1.15;
-      color: var(--ink);
-      letter-spacing: -.02em;
-      margin-bottom: 1rem;
-    }
-
-    .section-sub {
-      font-size: 1rem; color: var(--ink-3); line-height: 1.7;
-      max-width: 540px;
-    }
-
-    /* ─── PAIN POINTS ──────────────────────────────── */
+    /* PAIN */
     .pain { background: var(--stone); }
-
-    .pain-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem;
-      margin-top: 3rem;
-    }
-
-    .pain-card {
-      background: var(--white);
-      border-radius: 16px;
-      padding: 1.5rem;
-      border: 1px solid var(--stone-2);
-      box-shadow: var(--shadow-sm);
-      display: flex; gap: 1rem; align-items: flex-start;
-      transition: box-shadow .2s, transform .2s;
-    }
+    .pain-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-top: 3rem; }
+    .pain-card { background: var(--white); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--stone-2); box-shadow: var(--shadow-sm); display: flex; gap: 1rem; align-items: flex-start; transition: box-shadow .2s, transform .2s; }
     .pain-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-
-    .pain-icon {
-      width: 40px; height: 40px; border-radius: 10px;
-      background: var(--red-soft);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; flex-shrink: 0;
-    }
-
-    .pain-card h3 {
-      font-size: .95rem; font-weight: 600; color: var(--ink);
-      margin-bottom: .35rem; line-height: 1.3;
-    }
+    .pain-icon { width: 40px; height: 40px; border-radius: 10px; background: #FBEEEC; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .pain-card h3 { font-size: .95rem; font-weight: 600; color: var(--ink); margin-bottom: .35rem; line-height: 1.3; }
     .pain-card p { font-size: .875rem; color: var(--ink-3); line-height: 1.6; }
 
-    /* ─── FEATURES ─────────────────────────────────── */
+    /* HOW IT WORKS */
+    .how { background: var(--white); }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem; position: relative; }
+    .steps::before { content: ''; position: absolute; top: 28px; left: calc(16.66% + 1rem); right: calc(16.66% + 1rem); height: 2px; background: linear-gradient(90deg, var(--gold-muted) 0%, var(--gold) 50%, var(--gold-muted) 100%); }
+    .step { text-align: center; position: relative; }
+    .step-num { width: 56px; height: 56px; border-radius: 50%; background: var(--gold); color: white; font-family: var(--serif); font-size: 1.4rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; box-shadow: 0 4px 16px rgba(184,149,42,.3); position: relative; z-index: 1; }
+    .step h3 { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: .5rem; }
+    .step p { font-size: .875rem; color: var(--ink-3); line-height: 1.6; }
+
+    /* COMPARISON */
+    .compare { background: var(--stone); }
+    .compare-table { width: 100%; border-collapse: collapse; margin-top: 2.5rem; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-md); }
+    .compare-table th { padding: 1rem 1.25rem; text-align: left; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+    .compare-table th:first-child { background: var(--stone-2); color: var(--ink-3); width: 40%; }
+    .compare-table th.col-them { background: #f0ede8; color: var(--ink-3); }
+    .compare-table th.col-us { background: var(--gold); color: white; }
+    .compare-table td { padding: .9rem 1.25rem; font-size: .9rem; border-top: 1px solid var(--stone-2); }
+    .compare-table td:first-child { background: var(--white); color: var(--ink-2); font-weight: 500; }
+    .compare-table td.col-them { background: var(--white); color: var(--ink-3); }
+    .compare-table td.col-us { background: var(--gold-bg); color: var(--ink); font-weight: 500; }
+    .check { color: #4CAF50; font-weight: 700; }
+    .cross { color: #e53935; }
+
+    /* FEATURES */
     .features { background: var(--white); }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-      margin-top: 3rem;
-    }
-
-    .feature-card {
-      padding: 1.75rem 1.5rem;
-      border-radius: 18px;
-      border: 1.5px solid var(--stone-2);
-      background: var(--white);
-      transition: border-color .2s, box-shadow .2s, transform .2s;
-      position: relative;
-      overflow: hidden;
-    }
-    .feature-card::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--gold) 0%, transparent 100%);
-      opacity: 0; transition: opacity .2s;
-    }
-    .feature-card:hover {
-      border-color: var(--gold-muted);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-3px);
-    }
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; }
+    .feature-card { padding: 1.75rem 1.5rem; border-radius: 18px; border: 1.5px solid var(--stone-2); background: var(--white); transition: border-color .2s, box-shadow .2s, transform .2s; position: relative; overflow: hidden; }
+    .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold) 0%, transparent 100%); opacity: 0; transition: opacity .2s; }
+    .feature-card:hover { border-color: var(--gold-muted); box-shadow: var(--shadow-md); transform: translateY(-3px); }
     .feature-card:hover::before { opacity: 1; }
-
-    .feature-emoji {
-      font-size: 1.75rem; margin-bottom: 1rem;
-      display: block;
-    }
-    .feature-card h3 {
-      font-size: 1rem; font-weight: 600; color: var(--ink);
-      margin-bottom: .5rem;
-    }
+    .feature-emoji { font-size: 1.75rem; margin-bottom: 1rem; display: block; }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: .5rem; }
     .feature-card p { font-size: .875rem; color: var(--ink-3); line-height: 1.6; }
 
-    /* ─── PRICING ──────────────────────────────────── */
+    /* PRICING */
     .pricing { background: var(--gold-bg); }
-
-    .pricing-note {
-      display: inline-flex; align-items: center; gap: .5rem;
-      background: var(--white);
-      border: 1px solid var(--gold-muted);
-      border-radius: 99px;
-      padding: .4rem 1rem;
-      font-size: .82rem; color: var(--gold);
-      font-weight: 500;
-      margin-bottom: 3rem;
-    }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      max-width: 680px;
-    }
-
-    .pricing-card {
-      background: var(--white);
-      border-radius: 20px;
-      padding: 2rem;
-      border: 1.5px solid var(--stone-2);
-      box-shadow: var(--shadow-sm);
-      position: relative;
-    }
-    .pricing-card.featured {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 1px var(--gold-muted), var(--shadow-md);
-    }
-
-    .pricing-badge {
-      position: absolute; top: -12px; left: 1.5rem;
-      background: var(--gold);
-      color: white; font-size: .7rem; font-weight: 700;
-      letter-spacing: .06em; text-transform: uppercase;
-      padding: .25rem .75rem; border-radius: 99px;
-    }
-
-    .pricing-tier {
-      font-size: .8rem; font-weight: 600; letter-spacing: .1em;
-      text-transform: uppercase; color: var(--ink-3);
-      margin-bottom: .75rem;
-    }
-
-    .pricing-price {
-      font-family: var(--serif);
-      font-size: 2.4rem;
-      color: var(--ink);
-      line-height: 1;
-      margin-bottom: .25rem;
-    }
-    .pricing-price span {
-      font-family: var(--sans);
-      font-size: .9rem;
-      color: var(--ink-3);
-      font-weight: 400;
-    }
-
-    .pricing-desc {
-      font-size: .875rem; color: var(--ink-3);
-      margin: .75rem 0 1.25rem;
-      line-height: 1.6;
-    }
-
+    .pricing-note { display: inline-flex; align-items: center; gap: .5rem; background: var(--white); border: 1px solid var(--gold-muted); border-radius: 99px; padding: .4rem 1rem; font-size: .82rem; color: var(--gold); font-weight: 500; margin-bottom: 3rem; }
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; max-width: 960px; }
+    .pricing-card { background: var(--white); border-radius: 20px; padding: 2rem; border: 1.5px solid var(--stone-2); box-shadow: var(--shadow-sm); position: relative; }
+    .pricing-card.featured { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-muted), var(--shadow-md); }
+    .pricing-badge { position: absolute; top: -12px; left: 1.5rem; background: var(--gold); color: white; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: .25rem .75rem; border-radius: 99px; }
+    .pricing-tier { font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .75rem; }
+    .pricing-price { font-family: var(--serif); font-size: 2.4rem; color: var(--ink); line-height: 1; margin-bottom: .25rem; }
+    .pricing-price span { font-family: var(--sans); font-size: .9rem; color: var(--ink-3); font-weight: 400; }
+    .pricing-desc { font-size: .875rem; color: var(--ink-3); margin: .75rem 0 1.25rem; line-height: 1.6; }
     .pricing-features { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
-    .pricing-features li {
-      font-size: .875rem; color: var(--ink-2);
-      display: flex; align-items: center; gap: .5rem;
-    }
-    .pricing-features li::before {
-      content: '✓';
-      color: var(--gold); font-weight: 700; font-size: .8rem;
-      flex-shrink: 0;
-    }
-
-    .btn-primary-lg {
-      display: inline-block; margin-top: 1.5rem;
-      font-family: var(--sans); font-size: .9rem; font-weight: 600;
-      color: var(--white); background: var(--gold);
-      padding: .75rem 1.5rem; border-radius: 12px;
-      text-decoration: none; transition: background .15s, transform .1s;
-      box-shadow: 0 2px 10px rgba(184,149,42,.35);
-    }
+    .pricing-features li { font-size: .875rem; color: var(--ink-2); display: flex; align-items: center; gap: .5rem; }
+    .pricing-features li::before { content: '✓'; color: var(--gold); font-weight: 700; font-size: .8rem; flex-shrink: 0; }
+    .btn-primary-lg { display: inline-block; margin-top: 1.5rem; font-family: var(--sans); font-size: .9rem; font-weight: 600; color: var(--white); background: var(--gold); padding: .75rem 1.5rem; border-radius: 12px; text-decoration: none; transition: background .15s, transform .1s; box-shadow: 0 2px 10px rgba(184,149,42,.35); width: 100%; text-align: center; }
     .btn-primary-lg:hover { background: var(--gold-light); transform: translateY(-1px); }
-
-    .btn-outline-lg {
-      display: inline-block; margin-top: 1.5rem;
-      font-family: var(--sans); font-size: .9rem; font-weight: 500;
-      color: var(--ink-2); background: var(--white);
-      padding: .75rem 1.5rem; border-radius: 12px;
-      text-decoration: none;
-      border: 1.5px solid var(--stone-2);
-      transition: border-color .15s, background .15s;
-    }
+    .btn-outline-lg { display: inline-block; margin-top: 1.5rem; font-family: var(--sans); font-size: .9rem; font-weight: 500; color: var(--ink-2); background: var(--white); padding: .75rem 1.5rem; border-radius: 12px; text-decoration: none; border: 1.5px solid var(--stone-2); transition: border-color .15s, background .15s; width: 100%; text-align: center; }
     .btn-outline-lg:hover { border-color: var(--gold-muted); background: var(--gold-bg); }
 
-    /* ─── SOCIAL PROOF ─────────────────────────────── */
-    .proof {
-      background: var(--ink);
-      color: var(--white);
-    }
+    /* FAQ */
+    .faq { background: var(--white); }
+    .faq-list { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem; max-width: 680px; }
+    .faq-item { border: 1px solid var(--stone-2); border-radius: 14px; overflow: hidden; }
+    .faq-question { width: 100%; padding: 1.1rem 1.25rem; background: none; border: none; cursor: pointer; text-align: left; font-family: var(--sans); font-size: .95rem; font-weight: 600; color: var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .faq-question:hover { background: var(--stone); }
+    .faq-chevron { width: 20px; height: 20px; flex-shrink: 0; transition: transform .2s; color: var(--gold); }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-answer { display: none; padding: 0 1.25rem 1.1rem; font-size: .9rem; color: var(--ink-3); line-height: 1.7; }
+    .faq-item.open .faq-answer { display: block; }
 
-    .proof-inner {
-      max-width: 780px;
-    }
-
+    /* PROOF */
+    .proof { background: var(--ink); color: var(--white); }
+    .proof-inner { max-width: 780px; }
     .proof .section-eyebrow { color: var(--gold-light); }
-
-    .proof-location {
-      display: inline-flex; align-items: center; gap: .5rem;
-      background: rgba(184,149,42,.12);
-      border: 1px solid rgba(184,149,42,.2);
-      border-radius: 99px;
-      padding: .4rem 1rem;
-      font-size: .82rem; color: var(--gold-light);
-      font-weight: 500;
-      margin-bottom: 2.5rem;
-    }
-
-    .proof-quote {
-      font-family: var(--serif);
-      font-size: clamp(1.4rem, 2.5vw, 2rem);
-      line-height: 1.45;
-      color: var(--white);
-      letter-spacing: -.01em;
-      margin-bottom: 2rem;
-      position: relative;
-      padding-left: 2rem;
-    }
-    .proof-quote::before {
-      content: '"';
-      position: absolute; left: 0; top: -.2em;
-      font-family: var(--serif); font-size: 3.5rem;
-      color: var(--gold); line-height: 1;
-      opacity: .6;
-    }
-
-    .proof-author {
-      display: flex; align-items: center; gap: 1rem;
-    }
-    .proof-avatar {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--gold) 0%, #8B6E1A 100%);
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--serif); font-size: 1.1rem;
-      color: white; font-weight: 400; flex-shrink: 0;
-    }
+    .proof-location { display: inline-flex; align-items: center; gap: .5rem; background: rgba(184,149,42,.12); border: 1px solid rgba(184,149,42,.2); border-radius: 99px; padding: .4rem 1rem; font-size: .82rem; color: var(--gold-light); font-weight: 500; margin-bottom: 2.5rem; }
+    .proof-quote { font-family: var(--serif); font-size: clamp(1.4rem, 2.5vw, 2rem); line-height: 1.45; color: var(--white); letter-spacing: -.01em; margin-bottom: 2rem; position: relative; padding-left: 2rem; }
+    .proof-quote::before { content: '"'; position: absolute; left: 0; top: -.2em; font-family: var(--serif); font-size: 3.5rem; color: var(--gold); line-height: 1; opacity: .6; }
+    .proof-author { display: flex; align-items: center; gap: 1rem; }
+    .proof-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--gold) 0%, #8B6E1A 100%); display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 1.1rem; color: white; font-weight: 400; flex-shrink: 0; }
     .proof-name { font-size: .95rem; font-weight: 600; color: var(--white); }
     .proof-role { font-size: .82rem; color: rgba(255,255,255,.4); }
-
-    .proof-stats {
-      display: flex; gap: 3rem;
-      margin-top: 3.5rem;
-      padding-top: 3rem;
-      border-top: 1px solid rgba(255,255,255,.08);
-    }
-    .proof-stat-num {
-      font-family: var(--serif);
-      font-size: 2.4rem;
-      color: var(--gold-light);
-      line-height: 1;
-      margin-bottom: .25rem;
-    }
+    .proof-stats { display: flex; gap: 3rem; margin-top: 3.5rem; padding-top: 3rem; border-top: 1px solid rgba(255,255,255,.08); }
+    .proof-stat-num { font-family: var(--serif); font-size: 2.4rem; color: var(--gold-light); line-height: 1; margin-bottom: .25rem; }
     .proof-stat-label { font-size: .82rem; color: rgba(255,255,255,.4); }
 
-    /* ─── FOOTER ───────────────────────────────────── */
-    footer {
-      background: var(--ink);
-      border-top: 1px solid rgba(255,255,255,.06);
-      padding: 3rem clamp(1.5rem, 5vw, 4rem);
-      display: flex; justify-content: space-between; align-items: flex-end;
-      flex-wrap: wrap; gap: 2rem;
-    }
+    /* CTA BANNER */
+    .cta-banner { background: linear-gradient(135deg, var(--gold) 0%, #8B6E1A 100%); padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 4rem); text-align: center; }
+    .cta-banner h2 { font-family: var(--serif); font-size: clamp(1.8rem, 3vw, 2.6rem); color: white; line-height: 1.2; margin-bottom: 1rem; }
+    .cta-banner p { font-size: 1rem; color: rgba(255,255,255,.8); margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .btn-white { display: inline-block; font-family: var(--sans); font-size: 1rem; font-weight: 600; color: var(--gold); background: white; padding: .85rem 2rem; border-radius: 12px; text-decoration: none; transition: transform .1s, box-shadow .15s; box-shadow: 0 4px 20px rgba(0,0,0,.15); }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+    .cta-trust { margin-top: 1.25rem; font-size: .82rem; color: rgba(255,255,255,.65); }
 
-    .footer-logo {
-      font-family: var(--serif);
-      font-size: 1.4rem;
-      color: var(--gold);
-    }
-    .footer-tagline {
-      font-size: .82rem;
-      color: rgba(255,255,255,.3);
-      margin-top: .25rem;
-    }
-
-    .footer-links {
-      display: flex; flex-direction: column; align-items: flex-end; gap: .4rem;
-    }
-    .footer-links a {
-      font-size: .875rem;
-      color: rgba(255,255,255,.45);
-      text-decoration: none;
-      transition: color .15s;
-    }
+    /* FOOTER */
+    footer { background: var(--ink); border-top: 1px solid rgba(255,255,255,.06); padding: 3rem clamp(1.5rem, 5vw, 4rem); }
+    .footer-inner { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; }
+    .footer-logo { font-family: var(--serif); font-size: 1.4rem; color: var(--gold); }
+    .footer-tagline { font-size: .82rem; color: rgba(255,255,255,.3); margin-top: .25rem; }
+    .footer-links { display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; }
+    .footer-links a { font-size: .875rem; color: rgba(255,255,255,.45); text-decoration: none; transition: color .15s; }
     .footer-links a:hover { color: var(--gold-light); }
+    .footer-legal { display: flex; gap: 1.5rem; margin-top: .5rem; }
+    .footer-legal a { font-size: .78rem; color: rgba(255,255,255,.3); text-decoration: none; }
+    .footer-legal a:hover { color: var(--gold-light); }
+    .footer-copy { width: 100%; text-align: center; font-size: .78rem; color: rgba(255,255,255,.2); padding-top: 2rem; border-top: 1px solid rgba(255,255,255,.05); margin-top: 2rem; }
 
-    .footer-copy {
-      width: 100%;
-      text-align: center;
-      font-size: .78rem;
-      color: rgba(255,255,255,.2);
-      padding-top: 2rem;
-      border-top: 1px solid rgba(255,255,255,.05);
-      margin-top: 1rem;
-    }
-
-    /* ─── ANIMATIONS ───────────────────────────────── */
-    .fade-up {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1);
-    }
+    /* ANIMATIONS */
+    .fade-up { opacity: 0; transform: translateY(24px); transition: opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1); }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
-
     .fade-up-delay-1 { transition-delay: .1s; }
     .fade-up-delay-2 { transition-delay: .2s; }
     .fade-up-delay-3 { transition-delay: .3s; }
     .fade-up-delay-4 { transition-delay: .4s; }
     .fade-up-delay-5 { transition-delay: .5s; }
 
-    /* ─── RESPONSIVE ───────────────────────────────── */
+    /* RESPONSIVE */
     @media (max-width: 900px) {
-      .hero {
-        grid-template-columns: 1fr;
-        text-align: center;
-        padding-top: 100px;
-      }
+      .hero { grid-template-columns: 1fr; text-align: center; padding-top: 100px; }
       .hero-sub { margin-left: auto; margin-right: auto; }
       .hero-ctas { justify-content: center; }
       .hero-trust { justify-content: center; }
       .hero-visual { order: -1; }
       .tablet-behind { display: none; }
       .pain-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
+      .steps::before { display: none; }
       .features-grid { grid-template-columns: 1fr 1fr; }
-      .pricing-grid { grid-template-columns: 1fr; max-width: 360px; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
       .proof-stats { gap: 2rem; flex-wrap: wrap; }
-      footer { flex-direction: column; align-items: flex-start; }
+      .footer-inner { flex-direction: column; }
       .footer-links { align-items: flex-start; }
+      .compare-table { font-size: .82rem; }
     }
-
     @media (max-width: 560px) {
       .features-grid { grid-template-columns: 1fr; }
       .phone-shell { width: 220px; }
       .phone-screen { height: 400px; }
+      .savings-banner { flex-direction: column; }
     }
   </style>
 </head>
 <body>
 
-  <!-- NAV -->
   <nav>
     <a href="/" class="nav-logo">Rezify</a>
     <div class="nav-actions">
@@ -709,65 +264,46 @@
   <section class="hero">
     <div class="hero-content">
       <div class="hero-eyebrow fade-up">Built for MENA operators</div>
-
       <h1 class="hero-headline fade-up fade-up-delay-1">
-        Property management<br>
-        <em>built for</em> MENA hosts
+        Stop paying €300/month<br>for software that<br><em>wasn't built for you</em>
       </h1>
-
       <p class="hero-sub fade-up fade-up-delay-2">
-        The only channel manager with WhatsApp-native notifications, Arabic support, and pricing built for operators with 5–50 units.
+        Rezify is the only property management app built for Airbnb and Booking.com hosts in Egypt and MENA — with WhatsApp notifications, Arabic support, and EGP + USD tracking built in from day one.
       </p>
-
       <div class="hero-ctas fade-up fade-up-delay-3">
-        <a href="/signup" class="btn-primary" style="font-size:1rem; padding:.7rem 1.4rem;">Start Free</a>
-        <a href="#features" class="btn-outline">
-          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M6.5 5.5L10.5 8L6.5 10.5V5.5Z" fill="currentColor"/>
-          </svg>
+        <a href="/signup" class="btn-primary" style="font-size:1rem; padding:.7rem 1.4rem;">Start Free — No Card Needed</a>
+        <a href="#how-it-works" class="btn-outline">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 5.5L10.5 8L6.5 10.5V5.5Z" fill="currentColor"/></svg>
           See how it works
         </a>
       </div>
-
       <div class="hero-trust fade-up fade-up-delay-4">
         <span class="hero-trust-dot"></span>
-        Free for your first 2 units — no credit card needed
+        Free for your first 2 units · No credit card needed
       </div>
     </div>
 
     <div class="hero-visual fade-up fade-up-delay-2">
       <div class="mockup-wrap">
         <div class="mockup-glow"></div>
-
-        <!-- Floating calendar card -->
         <div class="tablet-behind fade-up fade-up-delay-4">
           <div class="tablet-cal-header">May 2026</div>
           <div class="cal-grid">
-            <div class="cal-cell">M</div><div class="cal-cell">T</div><div class="cal-cell">W</div>
-            <div class="cal-cell">T</div><div class="cal-cell">F</div><div class="cal-cell">S</div><div class="cal-cell">S</div>
-
-            <div class="cal-cell">1</div><div class="cal-cell booked">2</div><div class="cal-cell booked">3</div>
-            <div class="cal-cell booked">4</div><div class="cal-cell">5</div><div class="cal-cell">6</div><div class="cal-cell">7</div>
-
-            <div class="cal-cell partial">8</div><div class="cal-cell partial">9</div><div class="cal-cell today">10</div>
-            <div class="cal-cell booked">11</div><div class="cal-cell booked">12</div><div class="cal-cell booked">13</div><div class="cal-cell">14</div>
-
-            <div class="cal-cell">15</div><div class="cal-cell">16</div><div class="cal-cell booked">17</div>
-            <div class="cal-cell booked">18</div><div class="cal-cell booked">19</div><div class="cal-cell">20</div><div class="cal-cell">21</div>
+            <div class="cal-cell">M</div><div class="cal-cell">T</div><div class="cal-cell">W</div><div class="cal-cell">T</div><div class="cal-cell">F</div><div class="cal-cell">S</div><div class="cal-cell">S</div>
+            <div class="cal-cell">1</div><div class="cal-cell booked">2</div><div class="cal-cell booked">3</div><div class="cal-cell booked">4</div><div class="cal-cell">5</div><div class="cal-cell">6</div><div class="cal-cell">7</div>
+            <div class="cal-cell partial">8</div><div class="cal-cell partial">9</div><div class="cal-cell today">10</div><div class="cal-cell booked">11</div><div class="cal-cell booked">12</div><div class="cal-cell booked">13</div><div class="cal-cell">14</div>
+            <div class="cal-cell">15</div><div class="cal-cell">16</div><div class="cal-cell booked">17</div><div class="cal-cell booked">18</div><div class="cal-cell booked">19</div><div class="cal-cell">20</div><div class="cal-cell">21</div>
           </div>
         </div>
-
-        <!-- Phone -->
         <div class="phone-shell">
           <div class="phone-notch"></div>
           <div class="phone-screen">
             <div class="app-header">
               <div class="app-logo-sm">Rezify</div>
               <div class="app-tabs">
-                <div class="app-tab active">Dashboard</div>
+                <div class="app-tab active">Today</div>
                 <div class="app-tab">Calendar</div>
-                <div class="app-tab">Messages</div>
+                <div class="app-tab">Financials</div>
               </div>
             </div>
             <div class="app-body">
@@ -795,9 +331,7 @@
                   <div class="app-stat-sub">2 Airbnb · 1 Direct</div>
                 </div>
               </div>
-
               <div class="app-section-label">Today's activity</div>
-
               <div class="app-booking">
                 <div class="app-booking-dot" style="background:#4CAF50;"></div>
                 <div class="app-booking-info">
@@ -822,14 +356,13 @@
                 </div>
                 <div class="app-booking-badge badge-conf">Confirmed</div>
               </div>
-
               <div class="app-whatsapp-pill">
                 <div class="wa-icon">
                   <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.843L.057 23.785l6.086-1.597A11.947 11.947 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.011-1.373l-.359-.214-3.724.977.997-3.643-.234-.374A9.818 9.818 0 112 12a9.818 9.818 0 0110 9.818z"/></svg>
                 </div>
                 <div class="app-wa-text">
-                  <span class="app-wa-bold">New message</span> from Ahmed K.<br>
-                  <span>"شكراً جزيلاً، وصلت بأمان"</span>
+                  <span class="app-wa-bold">New booking</span> — Ahmed K.<br>
+                  <span>Kamaran Studio · 3 nights</span>
                 </div>
               </div>
             </div>
@@ -839,22 +372,27 @@
     </div>
   </section>
 
+  <!-- SAVINGS BANNER -->
+  <div class="savings-banner">
+    <span class="savings-banner-badge">💰 Real savings</span>
+    <p>Operators managing 25 units currently pay <strong>€310/month for Smoobu</strong> + custom software. Rezify replaces both for <strong>$300/month</strong> — saving you over <strong>$200/month</strong>.</p>
+  </div>
+
   <!-- PAIN POINTS -->
   <section class="pain">
     <div class="section-eyebrow fade-up">Sound familiar?</div>
     <h2 class="section-headline fade-up fade-up-delay-1">Tired of tools that<br>weren't built for you?</h2>
-    <p class="section-sub fade-up fade-up-delay-2">Western property software assumes you're managing apartments in Berlin or Amsterdam — not El Gouna or Hurghada.</p>
-
+    <p class="section-sub fade-up fade-up-delay-2">Western property software assumes you're managing apartments in Berlin — not El Gouna, Hurghada, or New Cairo.</p>
     <div class="pain-grid">
       <div class="pain-card fade-up fade-up-delay-1">
-        <div class="pain-icon">€</div>
+        <div class="pain-icon">💸</div>
         <div>
-          <h3>Paying €300/month for western-market software</h3>
-          <p>Enterprise PMS pricing that assumes European portfolios, not a 25-unit operation in El Gouna or Hurghada.</p>
+          <h3>Paying €300+/month for western software</h3>
+          <p>Enterprise PMS pricing built for European portfolios, not a 25-unit operation on the Red Sea coast.</p>
         </div>
       </div>
       <div class="pain-card fade-up fade-up-delay-2">
-        <div class="pain-icon">💬</div>
+        <div class="pain-icon">📱</div>
         <div>
           <h3>Managing everything through WhatsApp and Excel</h3>
           <p>Guest messages, owner stays, and channel updates scattered across chats and spreadsheets.</p>
@@ -870,10 +408,88 @@
       <div class="pain-card fade-up fade-up-delay-4">
         <div class="pain-icon">🌐</div>
         <div>
-          <h3>No Arabic support, no local payment options</h3>
-          <p>Interfaces and billing in EUR only — while your revenue is EGP, USD, and cash on the ground.</p>
+          <h3>No Arabic support, no EGP tracking</h3>
+          <p>Interfaces in English only — while your team speaks Arabic and your revenue is split between EGP and USD.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how-it-works">
+    <div class="section-eyebrow fade-up">How it works</div>
+    <h2 class="section-headline fade-up fade-up-delay-1">Up and running<br>in under 10 minutes</h2>
+    <div class="steps">
+      <div class="step fade-up fade-up-delay-1">
+        <div class="step-num">1</div>
+        <h3>Create your account</h3>
+        <p>Sign up free in 30 seconds. No credit card, no setup fees. Add your first 2 units at no cost.</p>
+      </div>
+      <div class="step fade-up fade-up-delay-2">
+        <div class="step-num">2</div>
+        <h3>Add your units & connect channels</h3>
+        <p>Paste your Airbnb and Booking.com iCal URLs. Rezify starts syncing calendars automatically.</p>
+      </div>
+      <div class="step fade-up fade-up-delay-3">
+        <div class="step-num">3</div>
+        <h3>Manage from one place</h3>
+        <p>See check-ins, revenue, and availability across all units. Get WhatsApp alerts for every booking.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON -->
+  <section class="compare">
+    <div class="section-eyebrow fade-up">How we compare</div>
+    <h2 class="section-headline fade-up fade-up-delay-1">Rezify vs the alternatives</h2>
+    <p class="section-sub fade-up fade-up-delay-2">Built specifically for MENA operators — not adapted from a product built for someone else.</p>
+    <div style="overflow-x:auto; margin-top:2.5rem;">
+      <table class="compare-table fade-up fade-up-delay-3">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="col-them">Smoobu / Hostaway</th>
+            <th class="col-us">Rezify</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Starting price</td>
+            <td class="col-them">€29–€299/month</td>
+            <td class="col-us">Free (up to 2 units)</td>
+          </tr>
+          <tr>
+            <td>Arabic interface</td>
+            <td class="col-them"><span class="cross">✗</span> Not available</td>
+            <td class="col-us"><span class="check">✓</span> Full Arabic + RTL</td>
+          </tr>
+          <tr>
+            <td>EGP + USD dashboard</td>
+            <td class="col-them"><span class="cross">✗</span> USD/EUR only</td>
+            <td class="col-us"><span class="check">✓</span> Both currencies</td>
+          </tr>
+          <tr>
+            <td>WhatsApp notifications</td>
+            <td class="col-them"><span class="cross">✗</span> Email only</td>
+            <td class="col-us"><span class="check">✓</span> Native WhatsApp</td>
+          </tr>
+          <tr>
+            <td>Airbnb + Booking.com sync</td>
+            <td class="col-them"><span class="check">✓</span> Yes</td>
+            <td class="col-us"><span class="check">✓</span> Yes (Business plan)</td>
+          </tr>
+          <tr>
+            <td>Built for MENA market</td>
+            <td class="col-them"><span class="cross">✗</span> European focus</td>
+            <td class="col-us"><span class="check">✓</span> Egypt-first</td>
+          </tr>
+          <tr>
+            <td>Mobile app (PWA)</td>
+            <td class="col-them">Varies</td>
+            <td class="col-us"><span class="check">✓</span> Installable on phone</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
@@ -881,7 +497,6 @@
   <section class="features" id="features">
     <div class="section-eyebrow fade-up">What you get</div>
     <h2 class="section-headline fade-up fade-up-delay-1">Everything a MENA host<br>actually needs</h2>
-
     <div class="features-grid">
       <div class="feature-card fade-up fade-up-delay-1">
         <span class="feature-emoji">🏠</span>
@@ -889,12 +504,12 @@
         <p>See every property, booking, and availability from a single dashboard. No more switching between tools.</p>
       </div>
       <div class="feature-card fade-up fade-up-delay-2">
-        <span class="feature-emoji">📱</span>
+        <span class="feature-emoji">💬</span>
         <h3>WhatsApp notifications built in</h3>
-        <p>Get check-in alerts, guest messages, and payment confirmations directly in WhatsApp — where you already work.</p>
+        <p>Get check-in alerts and booking confirmations directly in WhatsApp — where you already work.</p>
       </div>
       <div class="feature-card fade-up fade-up-delay-3">
-        <span class="feature-emoji">🗓️</span>
+        <span class="feature-emoji">📅</span>
         <h3>Master calendar across all properties</h3>
         <p>One calendar view that syncs instantly across all your units and channels. Block dates in seconds.</p>
       </div>
@@ -911,7 +526,7 @@
       <div class="feature-card fade-up fade-up-delay-3">
         <span class="feature-emoji">🌍</span>
         <h3>Arabic + English interface</h3>
-        <p>Switch between languages instantly. Your whole team can use it, from English-speaking managers to Arabic-speaking staff.</p>
+        <p>Switch between languages instantly. Your whole team can use it — from English managers to Arabic staff.</p>
       </div>
     </div>
   </section>
@@ -923,23 +538,20 @@
     <div class="pricing-note fade-up fade-up-delay-2">
       ✦ Start with your first 2 units free — no credit card needed
     </div>
-
-    <div class="pricing-grid" style="grid-template-columns: 1fr 1fr 1fr; max-width: 960px;">
-
+    <div class="pricing-grid">
       <div class="pricing-card fade-up fade-up-delay-1">
         <div class="pricing-tier">Starter</div>
         <div class="pricing-price">$0 <span>/ month</span></div>
         <p class="pricing-desc">For hosts just getting started. Up to 2 units, full PMS access.</p>
         <ul class="pricing-features">
           <li>Up to 2 units</li>
-          <li>Reservations & calendar</li>
+          <li>Reservations &amp; calendar</li>
           <li>WhatsApp notifications</li>
           <li>Arabic + English interface</li>
           <li>EGP + USD dashboard</li>
         </ul>
         <a href="/signup" class="btn-outline-lg">Get Started Free</a>
       </div>
-
       <div class="pricing-card fade-up fade-up-delay-2">
         <div class="pricing-tier">Pro</div>
         <div class="pricing-price">$5 <span>/ unit / month</span></div>
@@ -947,12 +559,11 @@
         <ul class="pricing-features">
           <li>Unlimited units</li>
           <li>Everything in Starter</li>
-          <li>Financials & occupancy reports</li>
+          <li>Financials &amp; occupancy reports</li>
           <li>7-day free trial</li>
         </ul>
         <a href="/signup" class="btn-outline-lg">Start Free Trial</a>
       </div>
-
       <div class="pricing-card featured fade-up fade-up-delay-3">
         <div class="pricing-badge">Most Popular</div>
         <div class="pricing-tier">Business</div>
@@ -967,7 +578,56 @@
         </ul>
         <a href="/signup" class="btn-primary-lg">Start Free Trial</a>
       </div>
+    </div>
+  </section>
 
+  <!-- FAQ -->
+  <section class="faq">
+    <div class="section-eyebrow fade-up">FAQ</div>
+    <h2 class="section-headline fade-up fade-up-delay-1">Common questions</h2>
+    <div class="faq-list fade-up fade-up-delay-2">
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Is Rezify really free for 2 units?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-answer">Yes — completely free, forever. No time limit, no credit card required. You get full access to reservations, calendar, WhatsApp notifications, and the EGP + USD dashboard for up to 2 units at no cost.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          How does Airbnb and Booking.com sync work?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-answer">You paste your iCal URL from Airbnb and Booking.com into Rezify. We sync calendars automatically every few hours, and you can also trigger a manual sync anytime. When a booking comes in on either platform, it blocks the dates on the other automatically — preventing double bookings.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Can my team use it too?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-answer">Yes — each team member can have their own account. The app supports full Arabic RTL layout so Arabic-speaking staff can use it comfortably alongside English-speaking managers.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          How does WhatsApp notification work?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-answer">When a new reservation is added, Rezify sends a WhatsApp message to your configured number with all the details — guest name, unit, check-in/check-out dates, and price. You add your WhatsApp number once in Settings and it works automatically.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          What happens if I cancel my subscription?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-answer">You keep access until the end of your billing period. After that, you're automatically moved to the Starter plan (2 units free). Your data is never deleted — you can upgrade again anytime.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Can I use Rezify on my phone?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-answer">Yes — Rezify is a Progressive Web App (PWA). On iPhone, open getrezify.com in Safari → tap Share → Add to Home Screen. On Android, Chrome will prompt you automatically. It installs like a native app with no App Store needed.</div>
+      </div>
     </div>
   </section>
 
@@ -976,15 +636,12 @@
     <div class="proof-inner">
       <div class="section-eyebrow fade-up">From the field</div>
       <h2 class="section-headline fade-up fade-up-delay-1" style="color:white;">Built by someone who<br>runs units every day</h2>
-
       <div class="proof-location fade-up fade-up-delay-2">
         📍 Built by a property manager in El Gouna managing 25 units
       </div>
-
       <blockquote class="proof-quote fade-up fade-up-delay-3">
         I built Rezify because nothing on the market fit how we actually work in Egypt — WhatsApp-first ops, EGP and USD revenue, Arabic on the team, and pricing that doesn't punish you for having twenty apartments instead of two hundred. This is the system I use every morning before the first guest checks in.
       </blockquote>
-
       <div class="proof-author fade-up fade-up-delay-4">
         <div class="proof-avatar">A</div>
         <div>
@@ -992,7 +649,6 @@
           <div class="proof-role">Founder, Rezify · El Gouna, Egypt</div>
         </div>
       </div>
-
       <div class="proof-stats fade-up fade-up-delay-5">
         <div>
           <div class="proof-stat-num">25</div>
@@ -1006,40 +662,59 @@
           <div class="proof-stat-num">0</div>
           <div class="proof-stat-label">Double bookings</div>
         </div>
+        <div>
+          <div class="proof-stat-num">$200+</div>
+          <div class="proof-stat-label">Saved per month</div>
+        </div>
       </div>
     </div>
   </section>
 
+  <!-- CTA BANNER -->
+  <div class="cta-banner">
+    <h2 class="fade-up">Ready to replace Smoobu?</h2>
+    <p class="fade-up fade-up-delay-1">Join MENA property managers who switched to a tool actually built for them. Free for your first 2 units — no credit card needed.</p>
+    <a href="/signup" class="btn-white fade-up fade-up-delay-2">Get Started Free</a>
+    <p class="cta-trust fade-up fade-up-delay-3">Free forever for 2 units · 7-day free trial on paid plans · Cancel anytime</p>
+  </div>
+
   <!-- FOOTER -->
   <footer>
-    <div>
-      <div class="footer-logo">Rezify</div>
-      <div class="footer-tagline">Property management for MENA hosts</div>
-    </div>
-    <div class="footer-links">
-      <a href="https://getrezify.com">getrezify.com</a>
-      <a href="mailto:hello@getrezify.com">hello@getrezify.com</a>
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Rezify</div>
+        <div class="footer-tagline">Property management for MENA hosts</div>
+        <div class="footer-legal">
+          <a href="/terms.html">Terms</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/refund.html">Refunds</a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="https://getrezify.com">getrezify.com</a>
+        <a href="mailto:hello@getrezify.com">hello@getrezify.com</a>
+        <a href="/signin">Sign In</a>
+        <a href="/signup">Get Started Free</a>
+      </div>
     </div>
     <div class="footer-copy">© 2026 Rezify. All rights reserved.</div>
   </footer>
 
   <script>
     const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
+      entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
-
-    document.querySelectorAll('.hero .fade-up').forEach(el => {
+    document.querySelectorAll('.hero .fade-up, .savings-banner .fade-up, .cta-banner .fade-up').forEach(el => {
       setTimeout(() => el.classList.add('visible'), 100);
     });
+
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    }
   </script>
 </body>
 </html>
-
-
-
