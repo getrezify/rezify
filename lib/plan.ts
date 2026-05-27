@@ -1,12 +1,13 @@
-﻿import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { getAuthenticatedUser, getWorkspaceId } from "@/lib/workspace";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type UserPlan = "starter" | "pro" | "business";
 
 export const STARTER_UNIT_LIMIT = 2;
-export const PRO_VARIANT_ID = process.env.NEXT_PUBLIC_LS_PRO_VARIANT_ID ?? "";
-export const BUSINESS_VARIANT_ID = process.env.NEXT_PUBLIC_LS_BUSINESS_VARIANT_ID ?? "";
+
+export const PADDLE_PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID ?? "";
+export const PADDLE_BUSINESS_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_BUSINESS_PRICE_ID ?? "";
 
 let cachedPlan: UserPlan | null = null;
 let cachedPlanUserId: string | null = null;
@@ -22,13 +23,6 @@ export function isStarterAtUnitLimit(plan: UserPlan, unitCount: number): boolean
 
 export function canUseSync(plan: UserPlan): boolean {
   return plan === "business";
-}
-
-export function getCheckoutUrl(plan: "pro" | "business", email?: string): string {
-  const variantId = plan === "pro" ? "1709781" : "1709793";
-  const base = `https://getrezify.lemonsqueezy.com/checkout/buy/${variantId}`;
-  if (email) return `${base}?checkout[email]=${encodeURIComponent(email)}`;
-  return base;
 }
 
 export async function getUserPlan(
