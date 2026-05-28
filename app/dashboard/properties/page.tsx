@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getUserPlan, isStarterAtUnitLimit, STARTER_UNIT_LIMIT, type UserPlan } from "@/lib/plan";
+import { getUserPlan, isAtUnitLimit, STARTER_UNIT_LIMIT, PRO_UNIT_LIMIT, type UserPlan } from "@/lib/plan";
 import { supabase } from "@/lib/supabase";
 import { getWorkspaceId } from "@/lib/workspace";
 import Link from "next/link";
@@ -50,7 +50,13 @@ export default function PropertiesPage() {
   useEffect(() => { void runPageLoad(); }, [runPageLoad]);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 4000); return () => clearTimeout(timer); }, [toast]);
 
-  const atLimit = userPlan !== null && isStarterAtUnitLimit(userPlan, properties.length);
+  const atLimit = userPlan !== null && isAtUnitLimit(userPlan, properties.length);
+
+  function getLimitMessage(plan: UserPlan): string {
+    if (plan === "starter") return `Free plan includes 1 unit. Upgrade to Pro ($25/month) for up to 5 units, or Business ($50/month) for unlimited units.`;
+    if (plan === "pro") return `Pro plan includes up to 5 units. Upgrade to Business ($50/month) for unlimited units.`;
+    return "";
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,7 +127,7 @@ export default function PropertiesPage() {
       )}
 
       <Link href="/dashboard/units" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
-        <span aria-hidden>←</span> {t("back")}
+        <span aria-hidden>&#8592;</span> {t("back")}
       </Link>
 
       <header className="pt-4">
@@ -137,14 +143,9 @@ export default function PropertiesPage() {
       ) : atLimit ? (
         <div className="mt-8 rounded-xl border border-accent/40 bg-[var(--accent-muted)] px-4 py-6">
           <h2 className="font-display text-xl text-text">Unit limit reached</h2>
-          <p className="mt-2 text-sm text-muted">
-            Starter plan includes up to {STARTER_UNIT_LIMIT} units for free. Upgrade to Pro or Business to add more units.
-          </p>
-          <Link
-            href="/dashboard/upgrade"
-            className="mt-4 flex w-full items-center justify-center rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover"
-          >
-            View upgrade options →
+          <p className="mt-2 text-sm text-muted">{getLimitMessage(userPlan!)}</p>
+          <Link href="/dashboard/upgrade" className="mt-4 flex w-full items-center justify-center rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover">
+            View upgrade options &#8594;
           </Link>
         </div>
       ) : (

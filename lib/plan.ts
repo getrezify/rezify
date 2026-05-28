@@ -4,7 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type UserPlan = "starter" | "pro" | "business";
 
-export const STARTER_UNIT_LIMIT = 2;
+export const STARTER_UNIT_LIMIT = 1;
+export const PRO_UNIT_LIMIT = 5;
 
 export const PADDLE_PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID ?? "";
 export const PADDLE_BUSINESS_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_BUSINESS_PRICE_ID ?? "";
@@ -17,12 +18,31 @@ export function clearPlanCache() {
   cachedPlanUserId = null;
 }
 
+export function isAtUnitLimit(plan: UserPlan, unitCount: number): boolean {
+  if (plan === "starter") return unitCount >= STARTER_UNIT_LIMIT;
+  if (plan === "pro") return unitCount >= PRO_UNIT_LIMIT;
+  return false; // business = unlimited
+}
+
+// Keep backward compat
 export function isStarterAtUnitLimit(plan: UserPlan, unitCount: number): boolean {
-  return plan === "starter" && unitCount >= STARTER_UNIT_LIMIT;
+  return isAtUnitLimit(plan, unitCount);
 }
 
 export function canUseSync(plan: UserPlan): boolean {
-  return plan === "business";
+  return true; // all plans have sync now
+}
+
+export function getPlanLabel(plan: UserPlan): string {
+  if (plan === "pro") return "Pro — $25/month";
+  if (plan === "business") return "Business — $50/month";
+  return "Starter — Free";
+}
+
+export function getUnitLimit(plan: UserPlan): string {
+  if (plan === "starter") return "1 unit";
+  if (plan === "pro") return "up to 5 units";
+  return "unlimited units";
 }
 
 export async function getUserPlan(

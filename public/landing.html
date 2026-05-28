@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rezify — Property Management for MENA Hosts</title>
-  <meta name="description" content="The only property management app built for Airbnb and Booking.com hosts in Egypt and MENA. WhatsApp notifications, Arabic support, EGP + USD dashboard. Free for 2 units." />
+  <meta name="description" content="The only property management app built for Airbnb and Booking.com hosts in Egypt and MENA. WhatsApp notifications, Arabic support, EGP + USD dashboard. Free for 1 unit." />
   <meta property="og:title" content="Rezify — Property Management for MENA Hosts" />
   <meta property="og:description" content="Replace Smoobu and spreadsheets with one app built for Egypt. WhatsApp-native, Arabic-first, EGP + USD." />
   <meta property="og:url" content="https://www.getrezify.com" />
@@ -27,7 +27,6 @@
     html { scroll-behavior: smooth; }
     body { font-family: var(--sans); background: var(--white); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
-    /* NAV */
     nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,254,251,.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(184,149,42,.12); padding: 0 clamp(1.5rem, 5vw, 4rem); height: 64px; display: flex; align-items: center; justify-content: space-between; }
     .nav-logo { font-family: var(--serif); font-size: 1.5rem; color: var(--gold); text-decoration: none; }
     .nav-actions { display: flex; align-items: center; gap: .75rem; }
@@ -36,7 +35,6 @@
     .btn-primary { font-family: var(--sans); font-size: .9rem; font-weight: 600; color: var(--white); background: var(--gold); border: none; cursor: pointer; padding: .55rem 1.1rem; border-radius: 10px; transition: background .15s, transform .1s; text-decoration: none; display: inline-block; box-shadow: 0 2px 8px rgba(184,149,42,.35); }
     .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
 
-    /* HERO */
     .hero { min-height: 100vh; padding: 120px clamp(1.5rem, 5vw, 4rem) 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; background: var(--white); position: relative; overflow: hidden; }
     .hero::before { content: ''; position: absolute; top: -120px; right: -200px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(184,149,42,.08) 0%, transparent 70%); pointer-events: none; }
     .hero-content { position: relative; z-index: 1; }
@@ -51,13 +49,11 @@
     .hero-trust { margin-top: 2rem; display: flex; align-items: center; gap: .5rem; font-size: .82rem; color: var(--ink-3); }
     .hero-trust-dot { width: 6px; height: 6px; background: #4CAF50; border-radius: 50%; box-shadow: 0 0 0 3px rgba(76,175,80,.15); }
 
-    /* SAVINGS BANNER */
     .savings-banner { background: var(--ink); padding: 1.25rem clamp(1.5rem, 5vw, 4rem); display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; text-align: center; }
     .savings-banner p { font-size: .95rem; color: rgba(255,255,255,.7); }
     .savings-banner strong { color: var(--gold-light); }
     .savings-banner-badge { background: rgba(184,149,42,.2); border: 1px solid rgba(184,149,42,.3); color: var(--gold-light); font-size: .78rem; font-weight: 600; padding: .3rem .75rem; border-radius: 99px; white-space: nowrap; }
 
-    /* PHONE MOCKUP */
     .hero-visual { position: relative; z-index: 1; display: flex; justify-content: center; align-items: center; }
     .mockup-wrap { position: relative; animation: float 6s ease-in-out infinite; }
     @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
@@ -100,13 +96,11 @@
     .cal-cell.today { background: var(--gold); color: white; font-weight: 700; }
     .cal-cell.partial { background: rgba(76,175,80,.2); color: #81C784; }
 
-    /* SECTIONS */
     section { padding: clamp(4rem, 8vw, 7rem) clamp(1.5rem, 5vw, 4rem); }
     .section-eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin-bottom: .75rem; }
     .section-headline { font-family: var(--serif); font-size: clamp(2rem, 3.5vw, 2.8rem); line-height: 1.15; color: var(--ink); letter-spacing: -.02em; margin-bottom: 1rem; }
     .section-sub { font-size: 1rem; color: var(--ink-3); line-height: 1.7; max-width: 540px; }
 
-    /* PAIN */
     .pain { background: var(--stone); }
     .pain-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-top: 3rem; }
     .pain-card { background: var(--white); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--stone-2); box-shadow: var(--shadow-sm); display: flex; gap: 1rem; align-items: flex-start; transition: box-shadow .2s, transform .2s; }
@@ -115,7 +109,6 @@
     .pain-card h3 { font-size: .95rem; font-weight: 600; color: var(--ink); margin-bottom: .35rem; line-height: 1.3; }
     .pain-card p { font-size: .875rem; color: var(--ink-3); line-height: 1.6; }
 
-    /* HOW IT WORKS */
     .how { background: var(--white); }
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem; position: relative; }
     .steps::before { content: ''; position: absolute; top: 28px; left: calc(16.66% + 1rem); right: calc(16.66% + 1rem); height: 2px; background: linear-gradient(90deg, var(--gold-muted) 0%, var(--gold) 50%, var(--gold-muted) 100%); }
@@ -124,7 +117,6 @@
     .step h3 { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: .5rem; }
     .step p { font-size: .875rem; color: var(--ink-3); line-height: 1.6; }
 
-    /* COMPARISON */
     .compare { background: var(--stone); }
     .compare-table { width: 100%; border-collapse: collapse; margin-top: 2.5rem; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-md); }
     .compare-table th { padding: 1rem 1.25rem; text-align: left; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
@@ -138,7 +130,6 @@
     .check { color: #4CAF50; font-weight: 700; }
     .cross { color: #e53935; }
 
-    /* FEATURES */
     .features { background: var(--white); }
     .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; }
     .feature-card { padding: 1.75rem 1.5rem; border-radius: 18px; border: 1.5px solid var(--stone-2); background: var(--white); transition: border-color .2s, box-shadow .2s, transform .2s; position: relative; overflow: hidden; }
@@ -149,7 +140,6 @@
     .feature-card h3 { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: .5rem; }
     .feature-card p { font-size: .875rem; color: var(--ink-3); line-height: 1.6; }
 
-    /* PRICING */
     .pricing { background: var(--gold-bg); }
     .pricing-note { display: inline-flex; align-items: center; gap: .5rem; background: var(--white); border: 1px solid var(--gold-muted); border-radius: 99px; padding: .4rem 1rem; font-size: .82rem; color: var(--gold); font-weight: 500; margin-bottom: 3rem; }
     .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; max-width: 960px; }
@@ -168,7 +158,6 @@
     .btn-outline-lg { display: inline-block; margin-top: 1.5rem; font-family: var(--sans); font-size: .9rem; font-weight: 500; color: var(--ink-2); background: var(--white); padding: .75rem 1.5rem; border-radius: 12px; text-decoration: none; border: 1.5px solid var(--stone-2); transition: border-color .15s, background .15s; width: 100%; text-align: center; }
     .btn-outline-lg:hover { border-color: var(--gold-muted); background: var(--gold-bg); }
 
-    /* FAQ */
     .faq { background: var(--white); }
     .faq-list { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem; max-width: 680px; }
     .faq-item { border: 1px solid var(--stone-2); border-radius: 14px; overflow: hidden; }
@@ -179,7 +168,6 @@
     .faq-answer { display: none; padding: 0 1.25rem 1.1rem; font-size: .9rem; color: var(--ink-3); line-height: 1.7; }
     .faq-item.open .faq-answer { display: block; }
 
-    /* PROOF */
     .proof { background: var(--ink); color: var(--white); }
     .proof-inner { max-width: 780px; }
     .proof .section-eyebrow { color: var(--gold-light); }
@@ -194,7 +182,6 @@
     .proof-stat-num { font-family: var(--serif); font-size: 2.4rem; color: var(--gold-light); line-height: 1; margin-bottom: .25rem; }
     .proof-stat-label { font-size: .82rem; color: rgba(255,255,255,.4); }
 
-    /* CTA BANNER */
     .cta-banner { background: linear-gradient(135deg, var(--gold) 0%, #8B6E1A 100%); padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 4rem); text-align: center; }
     .cta-banner h2 { font-family: var(--serif); font-size: clamp(1.8rem, 3vw, 2.6rem); color: white; line-height: 1.2; margin-bottom: 1rem; }
     .cta-banner p { font-size: 1rem; color: rgba(255,255,255,.8); margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto; }
@@ -202,7 +189,6 @@
     .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.2); }
     .cta-trust { margin-top: 1.25rem; font-size: .82rem; color: rgba(255,255,255,.65); }
 
-    /* FOOTER */
     footer { background: var(--ink); border-top: 1px solid rgba(255,255,255,.06); padding: 3rem clamp(1.5rem, 5vw, 4rem); }
     .footer-inner { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; }
     .footer-logo { font-family: var(--serif); font-size: 1.4rem; color: var(--gold); }
@@ -215,7 +201,6 @@
     .footer-legal a:hover { color: var(--gold-light); }
     .footer-copy { width: 100%; text-align: center; font-size: .78rem; color: rgba(255,255,255,.2); padding-top: 2rem; border-top: 1px solid rgba(255,255,255,.05); margin-top: 2rem; }
 
-    /* ANIMATIONS */
     .fade-up { opacity: 0; transform: translateY(24px); transition: opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1); }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
     .fade-up-delay-1 { transition-delay: .1s; }
@@ -224,7 +209,6 @@
     .fade-up-delay-4 { transition-delay: .4s; }
     .fade-up-delay-5 { transition-delay: .5s; }
 
-    /* RESPONSIVE */
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; text-align: center; padding-top: 100px; }
       .hero-sub { margin-left: auto; margin-right: auto; }
@@ -260,18 +244,17 @@
     </div>
   </nav>
 
-  <!-- HERO -->
   <section class="hero">
     <div class="hero-content">
       <div class="hero-eyebrow fade-up">Built for MENA operators</div>
       <h1 class="hero-headline fade-up fade-up-delay-1">
-        Stop paying €300/month<br>for software that<br><em>wasn't built for you</em>
+        Stop paying &euro;300/month<br>for software that<br><em>wasn't built for you</em>
       </h1>
       <p class="hero-sub fade-up fade-up-delay-2">
-        Rezify is the only property management app built for Airbnb and Booking.com hosts in Egypt and MENA — with WhatsApp notifications, Arabic support, and EGP + USD tracking built in from day one.
+        Rezify is the only property management app built for Airbnb and Booking.com hosts in Egypt and MENA &mdash; with WhatsApp notifications, Arabic support, and EGP + USD tracking built in from day one.
       </p>
       <div class="hero-ctas fade-up fade-up-delay-3">
-        <a href="/signup" class="btn-primary" style="font-size:1rem; padding:.7rem 1.4rem;">Start Free — No Card Needed</a>
+        <a href="/signup" class="btn-primary" style="font-size:1rem; padding:.7rem 1.4rem;">Start Free &mdash; No Card Needed</a>
         <a href="#how-it-works" class="btn-outline">
           <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 5.5L10.5 8L6.5 10.5V5.5Z" fill="currentColor"/></svg>
           See how it works
@@ -279,10 +262,9 @@
       </div>
       <div class="hero-trust fade-up fade-up-delay-4">
         <span class="hero-trust-dot"></span>
-        Free for your first 2 units · No credit card needed
+        Free for your first unit &middot; No credit card needed
       </div>
     </div>
-
     <div class="hero-visual fade-up fade-up-delay-2">
       <div class="mockup-wrap">
         <div class="mockup-glow"></div>
@@ -311,7 +293,7 @@
                 <div class="app-stat">
                   <div class="app-stat-label">Revenue (USD)</div>
                   <div class="app-stat-val gold">$4,820</div>
-                  <div class="app-stat-sub">↑ 12% vs last mo.</div>
+                  <div class="app-stat-sub">+12% vs last mo.</div>
                 </div>
                 <div class="app-stat">
                   <div class="app-stat-label">Occupancy</div>
@@ -322,7 +304,7 @@
               <div class="app-stat-row">
                 <div class="app-stat">
                   <div class="app-stat-label">Revenue (EGP)</div>
-                  <div class="app-stat-val gold" style="font-size:.85rem;">ج.م 156,200</div>
+                  <div class="app-stat-val gold" style="font-size:.85rem;">156,200 EGP</div>
                   <div class="app-stat-sub">This month</div>
                 </div>
                 <div class="app-stat">
@@ -361,8 +343,8 @@
                   <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.843L.057 23.785l6.086-1.597A11.947 11.947 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.011-1.373l-.359-.214-3.724.977.997-3.643-.234-.374A9.818 9.818 0 112 12a9.818 9.818 0 0110 9.818z"/></svg>
                 </div>
                 <div class="app-wa-text">
-                  <span class="app-wa-bold">New booking</span> — Ahmed K.<br>
-                  <span>Kamaran Studio · 3 nights</span>
+                  <span class="app-wa-bold">New booking</span> &mdash; Ahmed K.<br>
+                  <span>Kamaran Studio &middot; 3 nights</span>
                 </div>
               </div>
             </div>
@@ -372,50 +354,47 @@
     </div>
   </section>
 
-  <!-- SAVINGS BANNER -->
   <div class="savings-banner">
-    <span class="savings-banner-badge">💰 Real savings</span>
-    <p>Operators managing 25 units currently pay <strong>€310/month for Smoobu</strong> + custom software. Rezify replaces both for <strong>$300/month</strong> — saving you over <strong>$200/month</strong>.</p>
+    <span class="savings-banner-badge">&#x1F4B0; Real savings</span>
+    <p>Operators managing 25 units currently pay <strong>&euro;310/month for competitors</strong>. Rezify replaces everything for <strong>$50/month</strong> &mdash; saving you over <strong>$200/month</strong>.</p>
   </div>
 
-  <!-- PAIN POINTS -->
   <section class="pain">
     <div class="section-eyebrow fade-up">Sound familiar?</div>
     <h2 class="section-headline fade-up fade-up-delay-1">Tired of tools that<br>weren't built for you?</h2>
-    <p class="section-sub fade-up fade-up-delay-2">Western property software assumes you're managing apartments in Berlin — not El Gouna, Hurghada, or New Cairo.</p>
+    <p class="section-sub fade-up fade-up-delay-2">Western property software assumes you're managing apartments in Berlin &mdash; not El Gouna, Hurghada, or New Cairo.</p>
     <div class="pain-grid">
       <div class="pain-card fade-up fade-up-delay-1">
-        <div class="pain-icon">💸</div>
+        <div class="pain-icon">&#x1F4B8;</div>
         <div>
-          <h3>Paying €300+/month for western software</h3>
+          <h3>Paying &euro;300+/month for western software</h3>
           <p>Enterprise PMS pricing built for European portfolios, not a 25-unit operation on the Red Sea coast.</p>
         </div>
       </div>
       <div class="pain-card fade-up fade-up-delay-2">
-        <div class="pain-icon">📱</div>
+        <div class="pain-icon">&#x1F4F1;</div>
         <div>
           <h3>Managing everything through WhatsApp and Excel</h3>
           <p>Guest messages, owner stays, and channel updates scattered across chats and spreadsheets.</p>
         </div>
       </div>
       <div class="pain-card fade-up fade-up-delay-3">
-        <div class="pain-icon">⚠️</div>
+        <div class="pain-icon">&#x26A0;&#xFE0F;</div>
         <div>
           <h3>Double bookings because sync was too slow</h3>
           <p>Calendar lag between Airbnb, Booking.com, and your team costs real money and guest trust.</p>
         </div>
       </div>
       <div class="pain-card fade-up fade-up-delay-4">
-        <div class="pain-icon">🌐</div>
+        <div class="pain-icon">&#x1F310;</div>
         <div>
           <h3>No Arabic support, no EGP tracking</h3>
-          <p>Interfaces in English only — while your team speaks Arabic and your revenue is split between EGP and USD.</p>
+          <p>Interfaces in English only &mdash; while your team speaks Arabic and your revenue is split between EGP and USD.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- HOW IT WORKS -->
   <section class="how" id="how-it-works">
     <div class="section-eyebrow fade-up">How it works</div>
     <h2 class="section-headline fade-up fade-up-delay-1">Up and running<br>in under 10 minutes</h2>
@@ -423,11 +402,11 @@
       <div class="step fade-up fade-up-delay-1">
         <div class="step-num">1</div>
         <h3>Create your account</h3>
-        <p>Sign up free in 30 seconds. No credit card, no setup fees. Add your first 2 units at no cost.</p>
+        <p>Sign up free in 30 seconds. No credit card, no setup fees. Add your first unit at no cost.</p>
       </div>
       <div class="step fade-up fade-up-delay-2">
         <div class="step-num">2</div>
-        <h3>Add your units & connect channels</h3>
+        <h3>Add your units &amp; connect channels</h3>
         <p>Paste your Airbnb and Booking.com iCal URLs. Rezify starts syncing calendars automatically.</p>
       </div>
       <div class="step fade-up fade-up-delay-3">
@@ -438,11 +417,10 @@
     </div>
   </section>
 
-  <!-- COMPARISON -->
   <section class="compare">
     <div class="section-eyebrow fade-up">How we compare</div>
     <h2 class="section-headline fade-up fade-up-delay-1">Rezify vs the alternatives</h2>
-    <p class="section-sub fade-up fade-up-delay-2">Built specifically for MENA operators — not adapted from a product built for someone else.</p>
+    <p class="section-sub fade-up fade-up-delay-2">Built specifically for MENA operators &mdash; not adapted from a product built for someone else.</p>
     <div style="overflow-x:auto; margin-top:2.5rem;">
       <table class="compare-table fade-up fade-up-delay-3">
         <thead>
@@ -453,99 +431,70 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Starting price</td>
-            <td class="col-them">€29–€299/month</td>
-            <td class="col-us">Free (up to 2 units)</td>
-          </tr>
-          <tr>
-            <td>Arabic interface</td>
-            <td class="col-them"><span class="cross">✗</span> Not available</td>
-            <td class="col-us"><span class="check">✓</span> Full Arabic + RTL</td>
-          </tr>
-          <tr>
-            <td>EGP + USD dashboard</td>
-            <td class="col-them"><span class="cross">✗</span> USD/EUR only</td>
-            <td class="col-us"><span class="check">✓</span> Both currencies</td>
-          </tr>
-          <tr>
-            <td>WhatsApp notifications</td>
-            <td class="col-them"><span class="cross">✗</span> Email only</td>
-            <td class="col-us"><span class="check">✓</span> Native WhatsApp</td>
-          </tr>
-          <tr>
-            <td>Airbnb + Booking.com sync</td>
-            <td class="col-them"><span class="check">✓</span> Yes</td>
-            <td class="col-us"><span class="check">✓</span> Yes (Business plan)</td>
-          </tr>
-          <tr>
-            <td>Built for MENA market</td>
-            <td class="col-them"><span class="cross">✗</span> European focus</td>
-            <td class="col-us"><span class="check">✓</span> Egypt-first</td>
-          </tr>
-          <tr>
-            <td>Mobile app (PWA)</td>
-            <td class="col-them">Varies</td>
-            <td class="col-us"><span class="check">✓</span> Installable on phone</td>
-          </tr>
+          <tr><td>Starting price</td><td class="col-them">&euro;29&ndash;&euro;299/month</td><td class="col-us">Free (1 unit)</td></tr>
+          <tr><td>Arabic interface</td><td class="col-them"><span class="cross">&#x2717;</span> Not available</td><td class="col-us"><span class="check">&#x2713;</span> Full Arabic + RTL</td></tr>
+          <tr><td>EGP + USD dashboard</td><td class="col-them"><span class="cross">&#x2717;</span> USD/EUR only</td><td class="col-us"><span class="check">&#x2713;</span> Both currencies</td></tr>
+          <tr><td>WhatsApp notifications</td><td class="col-them"><span class="cross">&#x2717;</span> Email only</td><td class="col-us"><span class="check">&#x2713;</span> Native WhatsApp</td></tr>
+          <tr><td>Airbnb + Booking.com sync</td><td class="col-them"><span class="check">&#x2713;</span> Yes</td><td class="col-us"><span class="check">&#x2713;</span> All plans</td></tr>
+          <tr><td>Built for MENA market</td><td class="col-them"><span class="cross">&#x2717;</span> European focus</td><td class="col-us"><span class="check">&#x2713;</span> Egypt-first</td></tr>
+          <tr><td>Mobile app (PWA)</td><td class="col-them">Varies</td><td class="col-us"><span class="check">&#x2713;</span> Installable on phone</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <!-- FEATURES -->
   <section class="features" id="features">
     <div class="section-eyebrow fade-up">What you get</div>
     <h2 class="section-headline fade-up fade-up-delay-1">Everything a MENA host<br>actually needs</h2>
     <div class="features-grid">
       <div class="feature-card fade-up fade-up-delay-1">
-        <span class="feature-emoji">🏠</span>
+        <span class="feature-emoji">&#x1F3E0;</span>
         <h3>All your units in one place</h3>
         <p>See every property, booking, and availability from a single dashboard. No more switching between tools.</p>
       </div>
       <div class="feature-card fade-up fade-up-delay-2">
-        <span class="feature-emoji">💬</span>
+        <span class="feature-emoji">&#x1F4AC;</span>
         <h3>WhatsApp notifications built in</h3>
-        <p>Get check-in alerts and booking confirmations directly in WhatsApp — where you already work.</p>
+        <p>Get check-in alerts and booking confirmations directly in WhatsApp &mdash; where you already work.</p>
       </div>
       <div class="feature-card fade-up fade-up-delay-3">
-        <span class="feature-emoji">📅</span>
+        <span class="feature-emoji">&#x1F4C5;</span>
         <h3>Master calendar across all properties</h3>
         <p>One calendar view that syncs instantly across all your units and channels. Block dates in seconds.</p>
       </div>
       <div class="feature-card fade-up fade-up-delay-1">
-        <span class="feature-emoji">💰</span>
+        <span class="feature-emoji">&#x1F4B0;</span>
         <h3>Revenue dashboard in EGP and USD</h3>
         <p>Track income in both currencies without manual conversion. See your real revenue the way your business runs.</p>
       </div>
       <div class="feature-card fade-up fade-up-delay-2">
-        <span class="feature-emoji">🔄</span>
+        <span class="feature-emoji">&#x1F504;</span>
         <h3>Airbnb + Booking.com sync</h3>
         <p>Real-time calendar sync across all channels eliminates double bookings before they happen.</p>
       </div>
       <div class="feature-card fade-up fade-up-delay-3">
-        <span class="feature-emoji">🌍</span>
+        <span class="feature-emoji">&#x1F30D;</span>
         <h3>Arabic + English interface</h3>
-        <p>Switch between languages instantly. Your whole team can use it — from English managers to Arabic staff.</p>
+        <p>Switch between languages instantly. Your whole team can use it &mdash; from English managers to Arabic staff.</p>
       </div>
     </div>
   </section>
 
-  <!-- PRICING -->
   <section class="pricing" id="pricing">
     <div class="section-eyebrow fade-up">Pricing</div>
-    <h2 class="section-headline fade-up fade-up-delay-1">Pricing that grows<br>with your portfolio</h2>
+    <h2 class="section-headline fade-up fade-up-delay-1">Simple, transparent pricing</h2>
     <div class="pricing-note fade-up fade-up-delay-2">
-      ✦ Start with your first 2 units free — no credit card needed
+      &#x2726; Start with your first unit free &mdash; no credit card needed
     </div>
     <div class="pricing-grid">
       <div class="pricing-card fade-up fade-up-delay-1">
         <div class="pricing-tier">Starter</div>
-        <div class="pricing-price">$0 <span>/ month</span></div>
-        <p class="pricing-desc">For hosts just getting started. Up to 2 units, full PMS access.</p>
+        <div class="pricing-price">$0 <span>/ forever</span></div>
+        <p class="pricing-desc">For hosts just getting started. 1 unit free with all features included.</p>
         <ul class="pricing-features">
-          <li>Up to 2 units</li>
-          <li>Reservations &amp; calendar</li>
+          <li>1 unit</li>
+          <li>All features included</li>
+          <li>Airbnb + Booking.com sync</li>
           <li>WhatsApp notifications</li>
           <li>Arabic + English interface</li>
           <li>EGP + USD dashboard</li>
@@ -554,11 +503,13 @@
       </div>
       <div class="pricing-card fade-up fade-up-delay-2">
         <div class="pricing-tier">Pro</div>
-        <div class="pricing-price">$5 <span>/ unit / month</span></div>
-        <p class="pricing-desc">Full PMS for growing operators. Manage all your units without limits.</p>
+        <div class="pricing-price">$25 <span>/ month</span></div>
+        <p class="pricing-desc">For growing operators managing 2 to 5 units.</p>
         <ul class="pricing-features">
-          <li>Unlimited units</li>
-          <li>Everything in Starter</li>
+          <li>2 to 5 units</li>
+          <li>All features included</li>
+          <li>Airbnb + Booking.com sync</li>
+          <li>WhatsApp notifications</li>
           <li>Financials &amp; occupancy reports</li>
           <li>7-day free trial</li>
         </ul>
@@ -567,13 +518,14 @@
       <div class="pricing-card featured fade-up fade-up-delay-3">
         <div class="pricing-badge">Most Popular</div>
         <div class="pricing-tier">Business</div>
-        <div class="pricing-price">$12 <span>/ unit / month</span></div>
-        <p class="pricing-desc">Full PMS + channel sync. Eliminate double bookings automatically.</p>
+        <div class="pricing-price">$50 <span>/ month</span></div>
+        <p class="pricing-desc">For serious operators managing 6 or more units.</p>
         <ul class="pricing-features">
-          <li>Everything in Pro</li>
+          <li>6+ units (unlimited)</li>
+          <li>All features included</li>
           <li>Airbnb + Booking.com sync</li>
-          <li>Conflict detection alerts</li>
-          <li>Auto calendar updates</li>
+          <li>WhatsApp notifications</li>
+          <li>Priority support</li>
           <li>7-day free trial</li>
         </ul>
         <a href="/signup" class="btn-primary-lg">Start Free Trial</a>
@@ -581,104 +533,68 @@
     </div>
   </section>
 
-  <!-- FAQ -->
   <section class="faq">
     <div class="section-eyebrow fade-up">FAQ</div>
     <h2 class="section-headline fade-up fade-up-delay-1">Common questions</h2>
     <div class="faq-list fade-up fade-up-delay-2">
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          Is Rezify really free for 2 units?
-          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq-answer">Yes — completely free, forever. No time limit, no credit card required. You get full access to reservations, calendar, WhatsApp notifications, and the EGP + USD dashboard for up to 2 units at no cost.</div>
+        <button class="faq-question" onclick="toggleFaq(this)">Is Rezify really free for 1 unit?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-answer">Yes &mdash; completely free, forever. No time limit, no credit card required. You get full access to all features including Airbnb sync, WhatsApp notifications, and the EGP + USD dashboard for 1 unit at no cost.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          How does Airbnb and Booking.com sync work?
-          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq-answer">You paste your iCal URL from Airbnb and Booking.com into Rezify. We sync calendars automatically every few hours, and you can also trigger a manual sync anytime. When a booking comes in on either platform, it blocks the dates on the other automatically — preventing double bookings.</div>
+        <button class="faq-question" onclick="toggleFaq(this)">How does Airbnb and Booking.com sync work?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-answer">You paste your iCal URL from Airbnb and Booking.com into Rezify. We sync calendars automatically every few hours, and you can trigger a manual sync anytime. When a booking comes in on one platform, it blocks the dates on the other automatically.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          Can my team use it too?
-          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq-answer">Yes — each team member can have their own account. The app supports full Arabic RTL layout so Arabic-speaking staff can use it comfortably alongside English-speaking managers.</div>
+        <button class="faq-question" onclick="toggleFaq(this)">Can my team use it too?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-answer">Yes &mdash; each team member can have their own account. The app supports full Arabic RTL layout so Arabic-speaking staff can use it comfortably alongside English-speaking managers.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          How does WhatsApp notification work?
-          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq-answer">When a new reservation is added, Rezify sends a WhatsApp message to your configured number with all the details — guest name, unit, check-in/check-out dates, and price. You add your WhatsApp number once in Settings and it works automatically.</div>
+        <button class="faq-question" onclick="toggleFaq(this)">How does WhatsApp notification work?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-answer">When a new reservation is added, Rezify sends a WhatsApp message to your configured number with all the details &mdash; guest name, unit, check-in/check-out dates, and price. You add your WhatsApp number once in Settings and it works automatically.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          What happens if I cancel my subscription?
-          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq-answer">You keep access until the end of your billing period. After that, you're automatically moved to the Starter plan (2 units free). Your data is never deleted — you can upgrade again anytime.</div>
+        <button class="faq-question" onclick="toggleFaq(this)">What happens if I cancel my subscription?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-answer">You keep access until the end of your billing period. After that, you are automatically moved to the Starter plan (1 unit free). Your data is never deleted &mdash; you can upgrade again anytime.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          Can I use Rezify on my phone?
-          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq-answer">Yes — Rezify is a Progressive Web App (PWA). On iPhone, open getrezify.com in Safari → tap Share → Add to Home Screen. On Android, Chrome will prompt you automatically. It installs like a native app with no App Store needed.</div>
+        <button class="faq-question" onclick="toggleFaq(this)">Can I use Rezify on my phone?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="faq-answer">Yes &mdash; Rezify is a Progressive Web App (PWA). On iPhone, open getrezify.com in Safari, tap Share, then Add to Home Screen. On Android, Chrome will prompt you automatically. It installs like a native app with no App Store needed.</div>
       </div>
     </div>
   </section>
 
-  <!-- SOCIAL PROOF -->
   <section class="proof">
     <div class="proof-inner">
       <div class="section-eyebrow fade-up">From the field</div>
       <h2 class="section-headline fade-up fade-up-delay-1" style="color:white;">Built by someone who<br>runs units every day</h2>
-      <div class="proof-location fade-up fade-up-delay-2">
-        📍 Built by a property manager in El Gouna managing 25 units
-      </div>
+      <div class="proof-location fade-up fade-up-delay-2">&#x1F4CD; Built by a property manager in El Gouna managing 25 units</div>
       <blockquote class="proof-quote fade-up fade-up-delay-3">
-        I built Rezify because nothing on the market fit how we actually work in Egypt — WhatsApp-first ops, EGP and USD revenue, Arabic on the team, and pricing that doesn't punish you for having twenty apartments instead of two hundred. This is the system I use every morning before the first guest checks in.
+        I built Rezify because nothing on the market fit how we actually work in Egypt &mdash; WhatsApp-first ops, EGP and USD revenue, Arabic on the team, and pricing that doesn't punish you for having twenty apartments instead of two hundred. This is the system I use every morning before the first guest checks in.
       </blockquote>
       <div class="proof-author fade-up fade-up-delay-4">
         <div class="proof-avatar">A</div>
         <div>
           <div class="proof-name">Alaa Safwat</div>
-          <div class="proof-role">Founder, Rezify · El Gouna, Egypt</div>
+          <div class="proof-role">Founder, Rezify &middot; El Gouna, Egypt</div>
         </div>
       </div>
       <div class="proof-stats fade-up fade-up-delay-5">
-        <div>
-          <div class="proof-stat-num">25</div>
-          <div class="proof-stat-label">Units managed daily</div>
-        </div>
-        <div>
-          <div class="proof-stat-num">3+</div>
-          <div class="proof-stat-label">Channels synced</div>
-        </div>
-        <div>
-          <div class="proof-stat-num">0</div>
-          <div class="proof-stat-label">Double bookings</div>
-        </div>
-        <div>
-          <div class="proof-stat-num">$200+</div>
-          <div class="proof-stat-label">Saved per month</div>
-        </div>
+        <div><div class="proof-stat-num">25</div><div class="proof-stat-label">Units managed daily</div></div>
+        <div><div class="proof-stat-num">3+</div><div class="proof-stat-label">Channels synced</div></div>
+        <div><div class="proof-stat-num">0</div><div class="proof-stat-label">Double bookings</div></div>
+        <div><div class="proof-stat-num">$200+</div><div class="proof-stat-label">Saved per month</div></div>
       </div>
     </div>
   </section>
 
-  <!-- CTA BANNER -->
   <div class="cta-banner">
-    <h2 class="fade-up">Ready to replace Smoobu?</h2>
-    <p class="fade-up fade-up-delay-1">Join MENA property managers who switched to a tool actually built for them. Free for your first 2 units — no credit card needed.</p>
+    <h2 class="fade-up">Ready to simplify your operations?</h2>
+    <p class="fade-up fade-up-delay-1">Join MENA property managers who switched to a tool actually built for them. Free for your first unit &mdash; no credit card needed.</p>
     <a href="/signup" class="btn-white fade-up fade-up-delay-2">Get Started Free</a>
-    <p class="cta-trust fade-up fade-up-delay-3">Free forever for 2 units · 7-day free trial on paid plans · Cancel anytime</p>
+    <p class="cta-trust fade-up fade-up-delay-3">Free forever for 1 unit &middot; 7-day free trial on paid plans &middot; Cancel anytime</p>
   </div>
 
-  <!-- FOOTER -->
   <footer>
     <div class="footer-inner">
       <div>
@@ -697,7 +613,7 @@
         <a href="/signup">Get Started Free</a>
       </div>
     </div>
-    <div class="footer-copy">© 2026 Rezify. All rights reserved.</div>
+    <div class="footer-copy">&copy; 2026 Rezify. All rights reserved.</div>
   </footer>
 
   <script>
@@ -708,7 +624,6 @@
     document.querySelectorAll('.hero .fade-up, .savings-banner .fade-up, .cta-banner .fade-up').forEach(el => {
       setTimeout(() => el.classList.add('visible'), 100);
     });
-
     function toggleFaq(btn) {
       const item = btn.closest('.faq-item');
       const isOpen = item.classList.contains('open');

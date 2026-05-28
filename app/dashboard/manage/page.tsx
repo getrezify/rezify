@@ -9,14 +9,56 @@ import { createPortal } from "react-dom";
 
 type Currency = "EGP" | "USD";
 type UnitOption = { id: string; name: string };
-type Reservation = { id: string; unitName: string; guestName: string; checkIn: string; checkOut: string; price: string; currency: Currency; sourceId: BookingSource | null; sourceLabel: string };
-type DbReservation = { id: string; guest_name: string; source: string; check_in: string; check_out: string; total_price: number; currency: string; status?: string; properties?: { name: string } | null };
+type Reservation = {
+  id: string;
+  unitName: string;
+  guestName: string;
+  guestPhone: string | null;
+  checkIn: string;
+  checkOut: string;
+  price: string;
+  currency: Currency;
+  sourceId: BookingSource | null;
+  sourceLabel: string;
+  deposit: number;
+  insurance: number;
+  remainingCollected: boolean;
+};
+type DbReservation = {
+  id: string;
+  guest_name: string;
+  guest_phone?: string | null;
+  source: string;
+  check_in: string;
+  check_out: string;
+  total_price: number;
+  currency: string;
+  status?: string;
+  deposit?: number;
+  insurance?: number;
+  remaining_collected?: boolean;
+  properties?: { name: string } | null;
+};
 
 const inputClass = "w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-text transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)]";
 const labelClass = "mb-2 block text-sm font-medium text-text";
 
 function mapRow(row: DbReservation): Reservation {
-  return { id: row.id, unitName: row.properties?.name ?? "Unknown unit", guestName: row.guest_name, checkIn: row.check_in, checkOut: row.check_out, price: String(row.total_price), currency: row.currency === "USD" ? "USD" : "EGP", sourceId: isBookingSource(row.source) ? row.source : null, sourceLabel: row.source };
+  return {
+    id: row.id,
+    unitName: row.properties?.name ?? "Unknown unit",
+    guestName: row.guest_name,
+    guestPhone: row.guest_phone ?? null,
+    checkIn: row.check_in,
+    checkOut: row.check_out,
+    price: String(row.total_price),
+    currency: row.currency === "USD" ? "USD" : "EGP",
+    sourceId: isBookingSource(row.source) ? row.source : null,
+    sourceLabel: row.source,
+    deposit: row.deposit ?? 0,
+    insurance: row.insurance ?? 0,
+    remainingCollected: row.remaining_collected ?? false,
+  };
 }
 function formatDisplayDate(iso: string) {
   if (!iso) return "-";
@@ -101,7 +143,10 @@ export default function ManageReservationPage() {
     setIsSearching(true); setHasSearched(true); setIsModifying(false); setToast(null);
     const searchTerm = unitQuery.trim().toLowerCase();
     const workspaceId = await getWorkspaceId();
-    const { data } = await supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).eq("check_in", checkIn);
+    const { data } = await supabase.from("reservations")
+      .select("*, properties(name)")
+      .eq("workspace_id", workspaceId)
+      .eq("check_in", checkIn);
     setIsSearching(false);
     const rows = (data ?? []) as DbReservation[];
     const match = findMatch(rows, searchTerm);
@@ -130,6 +175,20 @@ export default function ManageReservationPage() {
     setIsModifying(false);
   }
 
+  async function handleToggleRemainingCollected() {
+    if (!reservation) return;
+    const newVal = !reservation.remainingCollected;
+    setIsSaving(true);
+    const { error } = await supabase.from("reservations").update({ remaining_collected: newVal }).eq("id", reservation.id);
+    setIsSaving(false);
+    if (error) { setToast({ message: error.message, type: "error" }); return; }
+    setReservation({ ...reservation, remainingCollected: newVal });
+    setToast({ message: newVal ? "Remaining amount marked as collected!" : "Marked as not collected", type: "success" });
+  }
+
+  const isOffline = reservation?.sourceLabel === "offline";
+  const remaining = isOffline && reservation ? Math.max(0, Number(reservation.price) - reservation.deposit) : 0;
+
   return (
     <div className="animate-fade-up relative pb-6">
       {toast && (
@@ -146,15 +205,22 @@ export default function ManageReservationPage() {
       <form onSubmit={handleSearch} className="mt-8 space-y-5">
         <div ref={unitRef}>
           <label className={labelClass}>{t("unit")}</label>
-          <input type="text" value={unitQuery} placeholder={t("search_units")} autoComplete="off" onChange={e => { setUnitQuery(e.target.value); setSelectedUnit(""); setUnitOpen(true); }} onFocus={() => setUnitOpen(true)} className={inputClass} />
+          <input type="text" value={unitQuery} placeholder={t("search_units")} autoComplete="off"
+            onChange={e => { setUnitQuery(e.target.value); setSelectedUnit(""); setUnitOpen(true); }}
+            onFocus={() => setUnitOpen(true)} className={inputClass} />
         </div>
         {unitOpen && typeof document !== "undefined" && createPortal(
           <ul ref={dropdownRef} role="listbox" style={{ top: menuRect.top, left: menuRect.left, width: menuRect.width }} className="fixed z-[100] max-h-48 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl">
-            {filteredUnits.length === 0 ? <li className="px-4 py-3 text-sm text-muted">{t("no_units_found")}</li> : filteredUnits.map(unit => (
-              <li key={unit.id}>
-                <button type="button" onClick={() => { setSelectedUnit(unit.name); setUnitQuery(unit.name); setUnitOpen(false); }} className={`w-full px-4 py-2.5 text-start text-sm transition-colors hover:bg-background ${selectedUnit === unit.name ? "bg-[var(--accent-muted)] text-accent" : "text-text"}`}>{unit.name}</button>
-              </li>
-            ))}
+            {filteredUnits.length === 0
+              ? <li className="px-4 py-3 text-sm text-muted">{t("no_units_found")}</li>
+              : filteredUnits.map(unit => (
+                <li key={unit.id}>
+                  <button type="button" onClick={() => { setSelectedUnit(unit.name); setUnitQuery(unit.name); setUnitOpen(false); }}
+                    className={`w-full px-4 py-2.5 text-start text-sm transition-colors hover:bg-background ${selectedUnit === unit.name ? "bg-[var(--accent-muted)] text-accent" : "text-text"}`}>
+                    {unit.name}
+                  </button>
+                </li>
+              ))}
           </ul>, document.body
         )}
 
@@ -174,6 +240,10 @@ export default function ManageReservationPage() {
             <article className="rounded-xl border border-border bg-surface p-4">
               <p className="font-semibold text-text">{reservation.unitName}</p>
               <p className="mt-0.5 text-sm text-muted">{reservation.guestName}</p>
+              {reservation.guestPhone && (
+                <a href={`tel:${reservation.guestPhone}`} className="mt-0.5 text-xs text-accent hover:underline block">{reservation.guestPhone}</a>
+              )}
+
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <InfoBox label={t("check_in")} value={formatDisplayDate(reservation.checkIn)} />
                 <InfoBox label={t("check_out")} value={formatDisplayDate(reservation.checkOut)} />
@@ -183,12 +253,71 @@ export default function ManageReservationPage() {
                   <div className="mt-1.5">{reservation.sourceId ? <SourceBadge source={reservation.sourceId} size="sm" /> : <p className="text-sm text-text">{reservation.sourceLabel}</p>}</div>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" onClick={handleCancel} disabled={isSaving} className="rounded-lg border border-red-500/60 py-2.5 text-sm font-semibold text-red-400 hover:border-red-500 hover:bg-red-500/10 disabled:opacity-50">{t("cancel")}</button>
-                <button type="button" onClick={() => isModifying ? setIsModifying(false) : (() => { setEditCheckIn(reservation.checkIn); setEditCheckOut(reservation.checkOut); setEditPrice(reservation.price); setEditCurrency(reservation.currency); setIsModifying(true); })()} disabled={isSaving} className="rounded-lg border border-accent py-2.5 text-sm font-semibold text-accent hover:bg-[var(--accent-muted)] disabled:opacity-50">
+
+              {/* Offline payment breakdown */}
+              {isOffline && (
+                <div className="mt-4 rounded-xl border border-border bg-background p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">Payment Breakdown</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                      <p className="text-xs text-muted">Total</p>
+                      <p className="font-semibold text-text">{Number(reservation.price).toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted">Deposit</p>
+                      <p className="font-semibold text-emerald-400">{reservation.deposit.toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted">Insurance</p>
+                      <p className="font-semibold text-accent">{reservation.insurance.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {/* Remaining */}
+                  <div className={`rounded-lg border px-4 py-3 ${reservation.remainingCollected ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-500/30 bg-amber-500/10"}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted">Remaining to collect</p>
+                        <p className={`font-display text-xl ${reservation.remainingCollected ? "text-emerald-400 line-through opacity-60" : "text-amber-400"}`}>
+                          {remaining.toLocaleString()} <span className="text-sm font-sans">{reservation.currency}</span>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleToggleRemainingCollected}
+                        disabled={isSaving}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${reservation.remainingCollected ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" : "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"}`}
+                      >
+                        <div className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-colors ${reservation.remainingCollected ? "bg-emerald-500 border-emerald-500" : "border-amber-400"}`}>
+                          {reservation.remainingCollected && (
+                            <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        {reservation.remainingCollected ? "Collected" : "Mark collected"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button type="button" onClick={handleCancel} disabled={isSaving}
+                  className="rounded-lg border border-red-500/60 py-2.5 text-sm font-semibold text-red-400 hover:border-red-500 hover:bg-red-500/10 disabled:opacity-50">
+                  {t("cancel")}
+                </button>
+                <button type="button" disabled={isSaving}
+                  onClick={() => isModifying ? setIsModifying(false) : (() => { setEditCheckIn(reservation.checkIn); setEditCheckOut(reservation.checkOut); setEditPrice(reservation.price); setEditCurrency(reservation.currency); setIsModifying(true); })()}
+                  className="rounded-lg border border-accent py-2.5 text-sm font-semibold text-accent hover:bg-[var(--accent-muted)] disabled:opacity-50">
                   {isModifying ? t("close") : t("modify")}
                 </button>
+                <button type="button" onClick={() => { setReservation(null); setHasSearched(false); setUnitQuery(""); setCheckIn(""); setIsModifying(false); }} disabled={isSaving}
+                  className="rounded-lg border border-border py-2.5 text-sm font-semibold text-muted hover:border-muted hover:text-text disabled:opacity-50">
+                  Done
+                </button>
               </div>
+
               {isModifying && (
                 <form onSubmit={handleSaveChanges} className="mt-4 animate-fade-up space-y-4 border-t border-border pt-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("edit_reservation")}</p>
@@ -202,7 +331,10 @@ export default function ManageReservationPage() {
                       <input type="number" min="0" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} className={`${inputClass} min-w-0 flex-1`} />
                       <div className="flex shrink-0 rounded-lg border border-border bg-background p-1">
                         {(["EGP", "USD"] as const).map(c => (
-                          <button key={c} type="button" onClick={() => setEditCurrency(c)} className={`rounded-md px-3 py-2 text-xs font-semibold transition-all ${editCurrency === c ? "bg-accent text-background" : "text-muted hover:text-text"}`}>{c}</button>
+                          <button key={c} type="button" onClick={() => setEditCurrency(c)}
+                            className={`rounded-md px-3 py-2 text-xs font-semibold transition-all ${editCurrency === c ? "bg-accent text-background" : "text-muted hover:text-text"}`}>
+                            {c}
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -215,7 +347,7 @@ export default function ManageReservationPage() {
             </article>
           ) : (
             <div className="rounded-xl border border-dashed border-border bg-surface/50 px-4 py-10 text-center">
-              <span className="text-2xl" role="img" aria-hidden>🔍</span>
+              <span className="text-2xl" role="img" aria-hidden>&#128269;</span>
               <p className="mt-2 text-sm font-medium text-text">{t("no_reservation_found")}</p>
               <p className="mt-1 text-xs text-muted">{t("try_different")}</p>
             </div>

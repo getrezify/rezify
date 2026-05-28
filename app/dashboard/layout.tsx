@@ -53,6 +53,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
     { href: "/dashboard/properties", label: t("tab_properties"), Icon: AddUnitIcon },
     { href: "/dashboard/calendar", label: t("tab_calendar"), Icon: CalendarGridIcon },
     { href: "/dashboard/channels", label: t("tab_sync"), Icon: ChannelsIcon },
+    { href: "/dashboard/brokered", label: "Brokered", Icon: HandshakeIcon },
     { href: "/dashboard/settings", label: t("tab_settings"), Icon: SettingsIcon },
   ];
 
@@ -125,7 +126,6 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
           <Link href="/dashboard" className="font-display text-2xl text-accent">Rezify</Link>
           <div className="flex items-center gap-2">
             <time className="text-xs text-muted" {...(headerDate ? { dateTime: new Date().toISOString() } : {})}>{headerDate}</time>
-
             <button
               type="button"
               onClick={toggle}
@@ -133,7 +133,6 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
             >
               {lang === "en" ? "AR" : "EN"}
             </button>
-
             <div className="relative" ref={menuRef}>
               <button
                 type="button"
@@ -221,7 +220,9 @@ function CalendarGridIcon({ className }: { className?: string }) {
 function ChannelsIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden><path d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66" strokeLinecap="round" /><path d="M16 4h4v4M8 20H4v-4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
+function HandshakeIcon({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden><path d="M4 12l2-2 4 4 4-4 2 2" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 9l3-3h4l2 2 2-2h4l3 3" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 9v6l3 3h14l3-3V9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
 function SettingsIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" strokeLinecap="round" /></svg>;
 }
-

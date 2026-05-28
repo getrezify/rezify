@@ -20,7 +20,7 @@ function formatDisplayDate(iso: string) {
 }
 function calculateNights(ci: string, co: string): number | null {
   if (!ci || !co) return null;
-  const n = Math.round((new Date(`${co}T12:00:00`).getTime()-new Date(`${ci}T12:00:00`).getTime())/(1000*60*60*24));
+  const n = Math.round((new Date(`${co}T12:00:00`).getTime() - new Date(`${ci}T12:00:00`).getTime()) / (1000 * 60 * 60 * 24));
   return n > 0 ? n : null;
 }
 
@@ -34,13 +34,25 @@ export default function AddReservationPage() {
   const [unitOpen, setUnitOpen] = useState(false);
   const [source, setSource] = useState<BookingSourceId>("airbnb");
   const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
   const [totalPrice, setTotalPrice] = useState("");
   const [currency, setCurrency] = useState<Currency>("EGP");
+  const [deposit, setDeposit] = useState("");
+  const [insurance, setInsurance] = useState("");
+  const [remainingCollected, setRemainingCollected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [conflict, setConflict] = useState<ConflictingReservation | null>(null);
   const unitRef = useRef<HTMLDivElement>(null);
   const nights = useMemo(() => calculateNights(checkIn, checkOut), [checkIn, checkOut]);
+
+  const isOffline = source === "offline";
+
+  const remaining = useMemo(() => {
+    const total = parseFloat(totalPrice) || 0;
+    const dep = parseFloat(deposit) || 0;
+    return Math.max(0, total - dep);
+  }, [totalPrice, deposit]);
 
   const filteredProperties = useMemo(() => {
     const q = unitQuery.trim().toLowerCase();
@@ -58,16 +70,28 @@ export default function AddReservationPage() {
 
   useEffect(() => {
     if (!unitOpen) return;
-    function handleClickOutside(e: MouseEvent) { if (unitRef.current && !unitRef.current.contains(e.target as Node)) setUnitOpen(false); }
+    function handleClickOutside(e: MouseEvent) {
+      if (unitRef.current && !unitRef.current.contains(e.target as Node)) setUnitOpen(false);
+    }
     document.addEventListener("mousedown", handleClickOutside, true);
     return () => document.removeEventListener("mousedown", handleClickOutside, true);
   }, [unitOpen]);
 
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 4000); return () => clearTimeout(timer); }, [toast]);
 
+  // Reset offline fields when switching away from offline
+  useEffect(() => {
+    if (!isOffline) {
+      setDeposit("");
+      setInsurance("");
+      setRemainingCollected(false);
+    }
+  }, [isOffline]);
+
   function clearForm() {
     setCheckIn(""); setCheckOut(""); setUnitQuery(""); setSelectedPropertyId("");
-    setSource("airbnb"); setGuestName(""); setTotalPrice(""); setCurrency("EGP");
+    setSource("airbnb"); setGuestName(""); setGuestPhone(""); setTotalPrice("");
+    setCurrency("EGP"); setDeposit(""); setInsurance(""); setRemainingCollected(false);
     setUnitOpen(false); setConflict(null);
   }
 
@@ -85,14 +109,38 @@ export default function AddReservationPage() {
 
   async function insertReservation(propertyId: string) {
     const workspaceId = await getWorkspaceId();
-    const { error } = await supabase.from("reservations").insert({ workspace_id: workspaceId, property_id: propertyId, guest_name: guestName.trim(), source, check_in: checkIn, check_out: checkOut, total_price: Number(totalPrice), currency });
+    const insertData: Record<string, unknown> = {
+      workspace_id: workspaceId,
+      property_id: propertyId,
+      guest_name: guestName.trim(),
+      source,
+      check_in: checkIn,
+      check_out: checkOut,
+      total_price: Number(totalPrice),
+      currency,
+    };
+
+    if (guestPhone.trim()) insertData.guest_phone = guestPhone.trim();
+    if (isOffline) {
+      insertData.deposit = Number(deposit) || 0;
+      insertData.insurance = Number(insurance) || 0;
+      insertData.remaining_collected = remainingCollected;
+    }
+
+    const { error } = await supabase.from("reservations").insert(insertData);
     if (error) { setToast({ message: error.message || "Failed to save reservation", type: "error" }); return false; }
+
     const unitName = properties.find(p => p.id === propertyId)?.name ?? unitQuery.trim();
     const nightCount = calculateNights(checkIn, checkOut) ?? 0;
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await fetch("/api/notify", { method: "POST", headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) }, body: JSON.stringify({ guestName: guestName.trim(), unitName, checkIn, checkOut, nights: nightCount, price: totalPrice, currency, source: source === "offline" ? "direct" : source === "owner" ? "other" : source }) });
+      await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+        body: JSON.stringify({ guestName: guestName.trim(), unitName, checkIn, checkOut, nights: nightCount, price: totalPrice, currency, source: source === "offline" ? "direct" : source === "owner" ? "other" : source })
+      });
     } catch { /* best-effort */ }
+
     setToast({ message: t("reservation_saved"), type: "success" });
     clearForm();
     return true;
@@ -126,7 +174,7 @@ export default function AddReservationPage() {
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-[400px] rounded-2xl border border-border bg-surface p-6 shadow-2xl">
             <div className="flex flex-col items-center text-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/15 text-2xl text-red-400" aria-hidden>⚠️</span>
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/15 text-2xl text-red-400" aria-hidden>&#9888;</span>
               <h2 className="mt-4 font-display text-xl text-text">{t("conflict_title")}</h2>
               <p className="mt-3 text-sm text-muted">{t("conflict_desc")}</p>
               <div className="mt-4 w-full rounded-xl border border-border bg-background px-4 py-3 text-start">
@@ -157,6 +205,7 @@ export default function AddReservationPage() {
       </header>
 
       <form onSubmit={handleSave} className="mt-8 space-y-6">
+        {/* Dates */}
         <fieldset className="space-y-4">
           <legend className="sr-only">Stay dates</legend>
           <div className="grid grid-cols-2 gap-3">
@@ -178,27 +227,38 @@ export default function AddReservationPage() {
           )}
         </fieldset>
 
+        {/* Unit */}
         <div ref={unitRef} className={`relative ${unitOpen ? "z-50" : ""}`}>
           <label className={labelClass}>{t("unit")}</label>
-          <input type="text" value={unitQuery} placeholder={t("search_units")} autoComplete="off" onChange={e => { setUnitQuery(e.target.value); setSelectedPropertyId(""); setUnitOpen(true); }} onFocus={() => setUnitOpen(true)} className={inputClass} />
+          <input type="text" value={unitQuery} placeholder={t("search_units")} autoComplete="off"
+            onChange={e => { setUnitQuery(e.target.value); setSelectedPropertyId(""); setUnitOpen(true); }}
+            onFocus={() => setUnitOpen(true)} className={inputClass} />
           {unitOpen && (
             <ul role="listbox" className="absolute start-0 end-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl">
-              {filteredProperties.length === 0 ? <li className="px-4 py-3 text-sm text-muted">{t("no_units_found")}</li> : filteredProperties.map(property => (
-                <li key={property.id}>
-                  <button type="button" onClick={() => { setSelectedPropertyId(property.id); setUnitQuery(property.name); setUnitOpen(false); }} className={`w-full px-4 py-2.5 text-start text-sm transition-colors hover:bg-background ${selectedPropertyId === property.id ? "bg-[var(--accent-muted)] text-accent" : "text-text"}`}>{property.name}</button>
-                </li>
-              ))}
+              {filteredProperties.length === 0
+                ? <li className="px-4 py-3 text-sm text-muted">{t("no_units_found")}</li>
+                : filteredProperties.map(property => (
+                  <li key={property.id}>
+                    <button type="button" onClick={() => { setSelectedPropertyId(property.id); setUnitQuery(property.name); setUnitOpen(false); }}
+                      className={`w-full px-4 py-2.5 text-start text-sm transition-colors hover:bg-background ${selectedPropertyId === property.id ? "bg-[var(--accent-muted)] text-accent" : "text-text"}`}>
+                      {property.name}
+                    </button>
+                  </li>
+                ))}
             </ul>
           )}
         </div>
 
+        {/* Booking Source */}
         <fieldset>
           <legend className={labelClass}>{t("booking_source")}</legend>
           <div className="grid grid-cols-2 gap-2">
             {BOOKING_SOURCE_LIST.map(({ id, icon, label, bg }) => {
               const selected = source === id;
               return (
-                <button key={id} type="button" onClick={() => setSource(id)} className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3.5 text-sm font-semibold transition-all ${selected ? "border-transparent text-white shadow-md" : "border-border bg-surface text-text hover:border-muted"}`} style={selected ? { backgroundColor: bg } : undefined}>
+                <button key={id} type="button" onClick={() => setSource(id)}
+                  className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3.5 text-sm font-semibold transition-all ${selected ? "border-transparent text-white shadow-md" : "border-border bg-surface text-text hover:border-muted"}`}
+                  style={selected ? { backgroundColor: bg } : undefined}>
                   <span aria-hidden>{icon}</span>{label}
                 </button>
               );
@@ -206,22 +266,89 @@ export default function AddReservationPage() {
           </div>
         </fieldset>
 
+        {/* Guest Name */}
         <div>
           <label className={labelClass}>{t("guest_name")}</label>
           <input type="text" value={guestName} onChange={e => setGuestName(e.target.value)} placeholder={t("full_name")} className={inputClass} />
         </div>
 
+        {/* Guest Phone */}
+        <div>
+          <label className={labelClass}>
+            Guest Phone <span className="text-muted font-normal">(optional)</span>
+          </label>
+          <input type="tel" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} placeholder="+20 100 000 0000" className={inputClass} />
+        </div>
+
+        {/* Total Price */}
         <div>
           <label className={labelClass}>{t("total_price")}</label>
           <div className="flex gap-2">
             <input type="number" min="0" step="0.01" value={totalPrice} onChange={e => setTotalPrice(e.target.value)} placeholder="0.00" className={`${inputClass} min-w-0 flex-1`} />
             <div className="flex shrink-0 rounded-lg border border-border bg-surface p-1">
               {(["EGP", "USD"] as const).map(c => (
-                <button key={c} type="button" onClick={() => setCurrency(c)} className={`rounded-md px-3 py-2 text-xs font-semibold transition-all ${currency === c ? "bg-accent text-background" : "text-muted hover:text-text"}`}>{c}</button>
+                <button key={c} type="button" onClick={() => setCurrency(c)}
+                  className={`rounded-md px-3 py-2 text-xs font-semibold transition-all ${currency === c ? "bg-accent text-background" : "text-muted hover:text-text"}`}>
+                  {c}
+                </button>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Offline-only fields */}
+        {isOffline && (
+          <div className="rounded-xl border border-border bg-surface p-4 space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Offline Reservation Details</p>
+
+            {/* Deposit */}
+            <div>
+              <label className={labelClass}>Deposit Paid</label>
+              <input type="number" min="0" step="0.01" value={deposit} onChange={e => setDeposit(e.target.value)} placeholder="0.00" className={inputClass} />
+            </div>
+
+            {/* Insurance */}
+            <div>
+              <label className={labelClass}>
+                Insurance <span className="text-muted font-normal">(refundable, not counted in revenue)</span>
+              </label>
+              <input type="number" min="0" step="0.01" value={insurance} onChange={e => setInsurance(e.target.value)} placeholder="0.00" className={inputClass} />
+            </div>
+
+            {/* Remaining - auto calculated */}
+            {totalPrice && (
+              <div className="rounded-lg border border-border bg-background px-4 py-3">
+                <p className="text-xs text-muted mb-1">Remaining to collect</p>
+                <p className="font-display text-xl text-accent">
+                  {remaining.toLocaleString()} <span className="text-sm font-sans text-muted">{currency}</span>
+                </p>
+                <p className="text-xs text-muted mt-1">
+                  {totalPrice} - {deposit || "0"} deposit
+                </p>
+              </div>
+            )}
+
+            {/* Remaining collected checkbox */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={remainingCollected}
+                  onChange={e => setRemainingCollected(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`h-5 w-5 rounded border-2 transition-colors flex items-center justify-center ${remainingCollected ? "bg-accent border-accent" : "border-border bg-background"}`}>
+                  {remainingCollected && (
+                    <svg className="h-3 w-3 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="text-sm font-medium text-text">Remaining amount collected</span>
+            </label>
+          </div>
+        )}
 
         <button type="submit" disabled={isSaving} className="w-full rounded-lg bg-accent py-3.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover disabled:opacity-60">
           {isSaving ? t("saving") : t("save_reservation")}
