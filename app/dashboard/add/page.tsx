@@ -39,7 +39,6 @@ export default function AddReservationPage() {
   const [currency, setCurrency] = useState<Currency>("EGP");
   const [deposit, setDeposit] = useState("");
   const [insurance, setInsurance] = useState("");
-  const [remainingCollected, setRemainingCollected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [conflict, setConflict] = useState<ConflictingReservation | null>(null);
@@ -84,14 +83,13 @@ export default function AddReservationPage() {
     if (!isOffline) {
       setDeposit("");
       setInsurance("");
-      setRemainingCollected(false);
     }
   }, [isOffline]);
 
   function clearForm() {
     setCheckIn(""); setCheckOut(""); setUnitQuery(""); setSelectedPropertyId("");
     setSource("airbnb"); setGuestName(""); setGuestPhone(""); setTotalPrice("");
-    setCurrency("EGP"); setDeposit(""); setInsurance(""); setRemainingCollected(false);
+    setCurrency("EGP"); setDeposit(""); setInsurance("");
     setUnitOpen(false); setConflict(null);
   }
 
@@ -124,7 +122,6 @@ export default function AddReservationPage() {
     if (isOffline) {
       insertData.deposit = Number(deposit) || 0;
       insertData.insurance = Number(insurance) || 0;
-      insertData.remaining_collected = remainingCollected;
     }
 
     const { error } = await supabase.from("reservations").insert(insertData);
@@ -328,25 +325,6 @@ export default function AddReservationPage() {
               </div>
             )}
 
-            {/* Remaining collected checkbox */}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={remainingCollected}
-                  onChange={e => setRemainingCollected(e.target.checked)}
-                  className="sr-only"
-                />
-                <div className={`h-5 w-5 rounded border-2 transition-colors flex items-center justify-center ${remainingCollected ? "bg-accent border-accent" : "border-border bg-background"}`}>
-                  {remainingCollected && (
-                    <svg className="h-3 w-3 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-              </div>
-              <span className="text-sm font-medium text-text">Remaining amount collected</span>
-            </label>
           </div>
         )}
 

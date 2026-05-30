@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   getBookingSourceBorderStyle,
@@ -83,7 +83,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function getMonthOptions() {
   const options: { key: string; label: string }[] = [];
   const now = new Date();
-  for (let i = 0; i < 7; i++) {
+  for (let i = -6; i < 18; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const label = d.toLocaleDateString("en-US", {
@@ -329,6 +329,7 @@ export default function UnitsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [portfolioLoading, setPortfolioLoading] = useState(true);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [brokeredProfit, setBrokeredProfit] = useState<{ egp: number; usd: number } | null>(null);
   const [viewKey, setViewKey] = useState(0);
   const [reservations, setReservations] = useState<UnitReservation[]>([]);
   const [displayPropertyName, setDisplayPropertyName] = useState("");
@@ -416,6 +417,10 @@ export default function UnitsPage() {
         .filter((r): r is PortfolioReservation => r !== null);
 
       setPortfolio(computePortfolio(propertyList, mapped, month));
+      const brokeredRes = await supabase.from("brokered_reservations").select("cost_price, sell_price, currency, check_in, check_out").eq("workspace_id", workspaceId).neq("status", "cancelled").lt("check_in", nextMonth).gt("check_out", monthStart);
+      const bEgp = (brokeredRes.data ?? []).filter((r: {currency:string}) => r.currency === "EGP").reduce((sum: number, r: {sell_price:number;cost_price:number}) => sum + (Number(r.sell_price) - Number(r.cost_price)), 0);
+      const bUsd = (brokeredRes.data ?? []).filter((r: {currency:string}) => r.currency === "USD").reduce((sum: number, r: {sell_price:number;cost_price:number}) => sum + (Number(r.sell_price) - Number(r.cost_price)), 0);
+      setBrokeredProfit({ egp: bEgp, usd: bUsd });
       setPortfolioLoading(false);
     },
     [],
@@ -613,6 +618,15 @@ export default function UnitsPage() {
                 value={String(portfolio.bookings)}
                 valueClass="text-text"
               />
+              {brokeredProfit && (brokeredProfit.egp !== 0 || brokeredProfit.usd !== 0) && (
+                <div className="col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted">Brokered Profit</p>
+                  <div className="mt-1 flex gap-3">
+                    {brokeredProfit.egp !== 0 && <p className={`text-lg font-semibold ${brokeredProfit.egp >= 0 ? "text-emerald-400" : "text-red-400"}`}>{brokeredProfit.egp >= 0 ? "+" : ""}{brokeredProfit.egp.toLocaleString()} EGP</p>}
+                    {brokeredProfit.usd !== 0 && <p className={`text-lg font-semibold ${brokeredProfit.usd >= 0 ? "text-emerald-400" : "text-red-400"}`}>{brokeredProfit.usd >= 0 ? "+" : ""}{brokeredProfit.usd.toLocaleString()} USD</p>}
+                  </div>
+                </div>
+              )}
             </div>
 
             <ul className="mt-4 space-y-2">
@@ -927,3 +941,6 @@ function LegendItem({ color, label }: { color: string; label: string }) {
     </span>
   );
 }
+
+
+

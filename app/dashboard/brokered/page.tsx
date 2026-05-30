@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
@@ -159,6 +159,23 @@ export default function BrokeredPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  });
+
+  function getMonthOptions() {
+    const options: { key: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = -6; i <= 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      options.push({ key, label });
+    }
+    return options;
+  }
+  const monthOptions = getMonthOptions();
 
   // Form fields
   const [unitDescription, setUnitDescription] = useState("");
@@ -186,10 +203,15 @@ export default function BrokeredPage() {
     setLoading(true);
     try {
       const workspaceId = await getWorkspaceId();
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const monthStart = `${selectedMonth}-01`;
+      const nextMonth = month === 12 ? `${year+1}-01-01` : `${year}-${String(month+1).padStart(2,"0")}-01`;
       const { data, error } = await supabase
         .from("brokered_reservations")
         .select("*")
         .eq("workspace_id", workspaceId)
+        .lt("check_in", nextMonth)
+        .gt("check_out", monthStart)
         .order("check_in", { ascending: false });
       if (error) throw error;
       setReservations((data ?? []) as BrokeredReservation[]);
@@ -198,7 +220,7 @@ export default function BrokeredPage() {
     }
   }
 
-  useEffect(() => { loadReservations(); }, []);
+  useEffect(() => { loadReservations(); }, [selectedMonth]);
 
   function clearForm() {
     setUnitDescription(""); setBrokerName(""); setBrokerPhone("");
@@ -388,7 +410,20 @@ export default function BrokeredPage() {
       )}
 
       {view === "list" && (
-        <div className="mt-6">
+        <div className="mt-4">
+          {/* Month filter */}
+          <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+            {monthOptions.map(opt => (
+              <button key={opt.key} type="button" onClick={() => setSelectedMonth(opt.key)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${selectedMonth === opt.key ? "bg-accent text-background" : "border border-border text-muted hover:border-accent hover:text-accent"}`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {view === "list" && (
+        <div className="mt-4">
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" />
@@ -404,6 +439,23 @@ export default function BrokeredPage() {
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Profit summary */}
+              {active.length > 0 && (() => {
+                const totalProfit = active.reduce((sum, r) => sum + (r.sell_price - r.cost_price), 0);
+                const totalEGP = active.filter(r => r.currency === "EGP").reduce((sum, r) => sum + (r.sell_price - r.cost_price), 0);
+                const totalUSD = active.filter(r => r.currency === "USD").reduce((sum, r) => sum + (r.sell_price - r.cost_price), 0);
+                return (
+                  <div className="rounded-xl border border-accent/30 bg-[var(--accent-muted)] px-4 py-3 mb-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Brokered Profit — {monthOptions.find(m => m.key === selectedMonth)?.label}</p>
+                    <div className="flex gap-4">
+                      {totalEGP !== 0 && <div><p className="text-xs text-muted">EGP</p><p className={`font-display text-xl ${totalEGP >= 0 ? "text-emerald-400" : "text-red-400"}`}>{totalEGP >= 0 ? "+" : ""}{totalEGP.toLocaleString()}</p></div>}
+                      {totalUSD !== 0 && <div><p className="text-xs text-muted">USD</p><p className={`font-display text-xl ${totalUSD >= 0 ? "text-emerald-400" : "text-red-400"}`}>{totalUSD >= 0 ? "+" : ""}{totalUSD.toLocaleString()}</p></div>}
+                      {totalEGP === 0 && totalUSD === 0 && <p className="text-sm text-muted">No profit data</p>}
+                    </div>
+                    <p className="text-xs text-muted mt-1">{active.length} brokered {active.length === 1 ? "reservation" : "reservations"}</p>
+                  </div>
+                );
+              })()}
               {active.length > 0 && (
                 <>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">Active</p>
@@ -458,3 +510,4 @@ export default function BrokeredPage() {
     </div>
   );
 }
+

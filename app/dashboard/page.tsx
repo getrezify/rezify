@@ -6,8 +6,9 @@ import { getWorkspaceId } from "@/lib/workspace";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type StayCard = { id: string; unitName: string; guestName: string; nightsInfo: string };
+type StayCard = { id: string; unitName: string; guestName: string; nightsInfo: string; isBrokered?: boolean };
 type DbReservation = { id: string; guest_name: string; check_in: string; check_out: string; property_id?: string; properties?: { name: string } | null };
+type DbBrokered = { id: string; guest_name: string; check_in: string; check_out: string; unit_description: string };
 type AvailabilityGap = { from: string; to: string; nights: number };
 type UnitAvailability = { unitId: string; unitName: string; isOccupied: boolean; gaps: AvailabilityGap[]; openEndedFrom: string | null };
 
@@ -26,6 +27,9 @@ function nightOfStay(checkIn: string, checkOut: string, today: string, nightLabe
 }
 function mapToStayCard(row: DbReservation, nightsInfo: string): StayCard {
   return { id: row.id, unitName: row.properties?.name ?? "Unknown unit", guestName: row.guest_name, nightsInfo };
+}
+function mapBrokeredToStayCard(row: DbBrokered, nightsInfo: string): StayCard {
+  return { id: row.id, unitName: row.unit_description, guestName: row.guest_name, nightsInfo, isBrokered: true };
 }
 function formatFullDate(date: Date, lang: string) {
   return date.toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
@@ -67,29 +71,54 @@ export default function TodayPage() {
     const today = getTodayISO();
     try {
       const workspaceId = await getWorkspaceId();
-      const [unitsRes, ciRows, coRows, occRows, futureRes] = await Promise.all([
+      const [unitsRes, ciRows, coRows, occRows, futureRes, brokeredCi, brokeredCo, brokeredOcc] = await Promise.all([
         supabase.from("properties").select("id, name").eq("workspace_id", workspaceId),
         supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).eq("check_in", today),
         supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).eq("check_out", today),
         supabase.from("reservations").select("*, properties(name)").eq("workspace_id", workspaceId).lte("check_in", today).gt("check_out", today),
         supabase.from("reservations").select("property_id, check_in, check_out").eq("workspace_id", workspaceId).gte("check_out", today).order("check_in"),
+        supabase.from("brokered_reservations").select("*").eq("workspace_id", workspaceId).eq("check_in", today).neq("status", "cancelled"),
+        supabase.from("brokered_reservations").select("*").eq("workspace_id", workspaceId).eq("check_out", today).neq("status", "cancelled"),
+        supabase.from("brokered_reservations").select("*").eq("workspace_id", workspaceId).lte("check_in", today).gt("check_out", today).neq("status", "cancelled"),
       ]);
+
       const units = (unitsRes.data ?? []) as { id: string; name: string }[];
       setHasUnits(units.length > 0);
-      setCheckIns(((ciRows.data ?? []) as DbReservation[]).map(row => {
+
+      const nightLabel = lang === "ar" ? "ليلة" : "Night";
+      const ofLabel = lang === "ar" ? "من" : "of";
+
+      // Regular check-ins + brokered check-ins
+      const regularCi = ((ciRows.data ?? []) as DbReservation[]).map(row => {
         const n = calculateNights(row.check_in, row.check_out);
         return mapToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("checkin_today")}`);
-      }));
-      setCheckOuts(((coRows.data ?? []) as DbReservation[]).map(row => {
+      });
+      const brokerCi = ((brokeredCi.data ?? []) as DbBrokered[]).map(row => {
+        const n = calculateNights(row.check_in, row.check_out);
+        return mapBrokeredToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("checkin_today")}`);
+      });
+      setCheckIns([...regularCi, ...brokerCi]);
+
+      // Regular check-outs + brokered check-outs
+      const regularCo = ((coRows.data ?? []) as DbReservation[]).map(row => {
         const n = calculateNights(row.check_in, row.check_out);
         return mapToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("checkout_today")}`);
-      }));
-      setOccupied(((occRows.data ?? []) as DbReservation[]).map(row =>
-        mapToStayCard(row, nightOfStay(row.check_in, row.check_out, today,
-          lang === "ar" ? "الليلة" : "Night",
-          lang === "ar" ? "من" : "of"
-        ))
-      ));
+      });
+      const brokerCo = ((brokeredCo.data ?? []) as DbBrokered[]).map(row => {
+        const n = calculateNights(row.check_in, row.check_out);
+        return mapBrokeredToStayCard(row, `${n} ${n === 1 ? t("night") : t("nights")} - ${t("checkout_today")}`);
+      });
+      setCheckOuts([...regularCo, ...brokerCo]);
+
+      // Occupied + brokered occupied
+      const regularOcc = ((occRows.data ?? []) as DbReservation[]).map(row =>
+        mapToStayCard(row, nightOfStay(row.check_in, row.check_out, today, nightLabel, ofLabel))
+      );
+      const brokerOcc = ((brokeredOcc.data ?? []) as DbBrokered[]).map(row =>
+        mapBrokeredToStayCard(row, nightOfStay(row.check_in, row.check_out, today, nightLabel, ofLabel))
+      );
+      setOccupied([...regularOcc, ...brokerOcc]);
+
       setUnitAvailability(buildUnitAvailability(units, (futureRes.data ?? []) as { property_id: string; check_in: string; check_out: string }[], today));
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : "Failed to load briefing");
@@ -121,7 +150,7 @@ export default function TodayPage() {
         </div>
       ) : !hasUnits ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface text-3xl">🏠</div>
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface text-3xl">&#127968;</div>
           <h2 className="font-display text-xl text-text">{t("no_units_yet")}</h2>
           <p className="mt-2 max-w-xs text-sm text-muted">{t("add_first_unit_desc")}</p>
           <Link href="/dashboard/properties" className="mt-6 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-accent-hover">
@@ -130,9 +159,9 @@ export default function TodayPage() {
         </div>
       ) : (
         <>
-          <BriefingSection title={t("check_ins")} dotClassName="bg-emerald-500" badgeClassName="bg-emerald-500/15 text-emerald-400" borderClassName="border-s-emerald-500" items={checkIns} emptyEmoji="📋" emptyMessage={t("no_checkins_today")} />
-          <BriefingSection title={t("check_outs")} dotClassName="bg-red-500" badgeClassName="bg-red-500/15 text-red-400" borderClassName="border-s-red-500" items={checkOuts} emptyEmoji="👋" emptyMessage={t("no_checkouts_today")} />
-          <BriefingSection title={t("currently_occupied")} dotClassName="bg-purple-500" badgeClassName="bg-purple-500/15 text-purple-400" borderClassName="border-s-purple-500" items={occupied} emptyEmoji="🛋️" emptyMessage={t("no_occupied")} />
+          <BriefingSection title={t("check_ins")} dotClassName="bg-emerald-500" badgeClassName="bg-emerald-500/15 text-emerald-400" borderClassName="border-s-emerald-500" items={checkIns} emptyEmoji="&#128077;" emptyMessage={t("no_checkins_today")} />
+          <BriefingSection title={t("check_outs")} dotClassName="bg-red-500" badgeClassName="bg-red-500/15 text-red-400" borderClassName="border-s-red-500" items={checkOuts} emptyEmoji="&#128075;" emptyMessage={t("no_checkouts_today")} />
+          <BriefingSection title={t("currently_occupied")} dotClassName="bg-purple-500" badgeClassName="bg-purple-500/15 text-purple-400" borderClassName="border-s-purple-500" items={occupied} emptyEmoji="&#127968;" emptyMessage={t("no_occupied")} />
           <AvailabilitySection units={unitAvailability} t={t} />
         </>
       )}
@@ -151,7 +180,7 @@ function AvailabilitySection({ units, t }: { units: UnitAvailability[]; t: (k: i
       </div>
       {units.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-surface/50 px-4 py-8 text-center">
-          <span className="text-2xl">🌙</span>
+          <span className="text-2xl">&#127968;</span>
           <p className="mt-2 text-sm text-muted">{t("no_available")}</p>
         </div>
       ) : (
@@ -168,15 +197,15 @@ function AvailabilitySection({ units, t }: { units: UnitAvailability[]; t: (k: i
               </div>
               <div className="mt-2 space-y-1">
                 {unit.gaps.length === 0 ? (
-                  <p className="text-xs text-muted">🟢 {t("no_upcoming_from")} {formatShortDate(unit.openEndedFrom!)}</p>
+                  <p className="text-xs text-muted">&#128197; {t("no_upcoming_from")} {formatShortDate(unit.openEndedFrom!)}</p>
                 ) : (
                   <>
                     {unit.gaps.map((gap, i) => (
                       <p key={i} className="text-xs text-muted">
-                        🟡 {t("available_label")} {formatShortDate(gap.from)} - {formatShortDate(gap.to)} — {gap.nights} {gap.nights === 1 ? t("night") : t("nights")}
+                        &#128197; {t("available_label")} {formatShortDate(gap.from)} - {formatShortDate(gap.to)} &mdash; {gap.nights} {gap.nights === 1 ? t("night") : t("nights")}
                       </p>
                     ))}
-                    <p className="text-xs text-muted">🟢 {t("no_upcoming_from")} {formatShortDate(unit.openEndedFrom!)}</p>
+                    <p className="text-xs text-muted">&#128197; {t("no_upcoming_from")} {formatShortDate(unit.openEndedFrom!)}</p>
                   </>
                 )}
               </div>
@@ -208,9 +237,16 @@ function BriefingSection({ title, dotClassName, badgeClassName, borderClassName,
         <ul className="space-y-2">
           {items.map(item => (
             <li key={item.id} className={`rounded-xl border border-border border-s-4 bg-surface px-4 py-3 ${borderClassName}`}>
-              <p className="font-semibold text-text">{item.unitName}</p>
-              <p className="mt-0.5 text-sm text-muted">{item.guestName}</p>
-              <p className="mt-1 text-xs text-muted/80">{item.nightsInfo}</p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-text">{item.unitName}</p>
+                  <p className="mt-0.5 text-sm text-muted">{item.guestName}</p>
+                  <p className="mt-1 text-xs text-muted/80">{item.nightsInfo}</p>
+                </div>
+                {item.isBrokered && (
+                  <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-400">Brokered</span>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -218,5 +254,3 @@ function BriefingSection({ title, dotClassName, badgeClassName, borderClassName,
     </section>
   );
 }
-
-
