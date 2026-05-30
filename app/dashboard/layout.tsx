@@ -162,7 +162,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2">{children}</main>
+      <main className="flex-1 overflow-y-auto scroll-smooth-ios px-4 pb-24 pt-2" onClick={e => { const t = e.target as HTMLElement; if (!["INPUT","TEXTAREA","SELECT","BUTTON","A"].includes(t.tagName)) { const active = document.activeElement as HTMLElement; active?.blur?.(); } }}>{children}</main>
 
       <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-border bg-surface/95 backdrop-blur-sm">
         <div className="overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
@@ -171,7 +171,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
               const isActive = isTabActive(pathname, href);
               return (
                 <li key={href} className="flex-1">
-                  <Link href={href} className={`flex min-w-[3.25rem] flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium transition-colors sm:text-[10px] ${isActive ? "text-accent" : "text-muted hover:text-text"}`}>
+                  <Link href={href} onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }} className={`flex min-w-[3.25rem] flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium transition-colors sm:text-[10px] ${isActive ? "text-accent" : "text-muted hover:text-text"}`}>
                     <Icon className={`h-5 w-5 ${isActive ? "text-accent" : "text-muted"}`} />
                     <span>{label}</span>
                   </Link>

@@ -313,11 +313,8 @@ function dayCellClass(status: DayStatus) {
 export default function UnitsPage() {
   const monthOptions = useMemo(() => getMonthOptions(), []);
   const defaultMonth = monthOptions[0]?.key ?? "";
-  const portfolioMonthKey = useMemo(() => getCurrentMonthKey(), []);
-  const portfolioMonthLabel = useMemo(
-    () => formatMonthLabelFromKey(portfolioMonthKey),
-    [portfolioMonthKey],
-  );
+  const [portfolioMonthKey, setPortfolioMonthKey] = useState(() => getCurrentMonthKey());
+  
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [unitQuery, setUnitQuery] = useState("");
@@ -483,10 +480,10 @@ export default function UnitsPage() {
 
   useEffect(() => {
     async function init() {
-      await refreshUnits();
+      const list = await loadProperties(); await loadPortfolio(list, portfolioMonthKey);
     }
     init();
-  }, [refreshUnits]);
+  }, [portfolioMonthKey, loadProperties, loadPortfolio]);
 
   useLayoutEffect(() => {
     if (!unitOpen || !unitRef.current) return;
@@ -585,7 +582,14 @@ export default function UnitsPage() {
 
       <section className="mt-8">
         <h2 className="font-display text-2xl text-text">Portfolio Overview</h2>
-        <p className="mt-1 text-sm text-muted">{portfolioMonthLabel}</p>
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {monthOptions.map(opt => (
+            <button key={opt.key} type="button" onClick={() => setPortfolioMonthKey(opt.key)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${portfolioMonthKey === opt.key ? "bg-accent text-background" : "border border-border text-muted hover:border-accent hover:text-accent"}`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
         {portfolioLoading ? (
           <div className="flex flex-col items-center justify-center py-14">
@@ -941,6 +945,9 @@ function LegendItem({ color, label }: { color: string; label: string }) {
     </span>
   );
 }
+
+
+
 
 
 

@@ -1,5 +1,4 @@
 @import "tailwindcss";
-
 :root {
   --background: #0a0a0a;
   --surface: #141414;
@@ -11,7 +10,6 @@
   --muted: #6b6b70;
   --foreground: var(--text);
 }
-
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -24,17 +22,16 @@
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
   --font-display: var(--font-dm-serif-display), Georgia, serif;
 }
-
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
-
 html {
   height: 100%;
+  /* Prevent iOS overscroll bounce on the html element */
+  overscroll-behavior: none;
 }
-
 body {
   min-height: 100%;
   margin: 0;
@@ -43,16 +40,36 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent text size adjustment on iOS rotation */
+  -webkit-text-size-adjust: 100%;
+  /* Improve tap highlight */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better tap targets — minimum 44px per Apple HIG */
+button, a, [role="button"] {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Remove the blue flash on iOS tap */
+input, textarea, select {
+  -webkit-tap-highlight-color: transparent;
 }
 
 input::placeholder {
   color: var(--muted);
 }
-
 input:focus {
   outline: none;
 }
 
+/* Dismiss keyboard when tapping outside inputs */
+.dismiss-keyboard {
+  cursor: default;
+}
+
+/* Page transition animations */
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -63,9 +80,22 @@ input:focus {
     transform: translateY(0);
   }
 }
-
 .animate-fade-up {
-  animation: fade-up 0.5s ease-out both;
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-slide-in {
+  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes toast-slide-up {
@@ -78,17 +108,81 @@ input:focus {
     transform: translate(-50%, 0);
   }
 }
-
 .animate-toast-slide-up {
   left: 50%;
   animation: toast-slide-up 0.35s ease-out both;
+}
+
+/* Loading skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--border) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Smooth tab switching */
+.tab-content {
+  animation: fade-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Active press state for all interactive elements */
+.active\:scale-95:active {
+  transform: scale(0.95);
+}
+
+/* Better scroll on iOS */
+.scroll-smooth-ios {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Larger bottom nav tap targets */
+nav li a {
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Smooth transitions on interactive elements */
+button, a {
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+/* Card press feedback */
+.card-press:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* Input focus ring improvement for dark theme */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+/* Prevent layout shift on iOS keyboard */
+@supports (-webkit-touch-callout: none) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

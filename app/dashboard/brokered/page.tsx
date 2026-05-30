@@ -73,7 +73,7 @@ function ExpandedBrokeredCard({ r, onCancel, onDone, onSaved }: { r: BrokeredRes
     currency: r.currency,
   });
 
-  const inputCls = "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text transition-colors focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)]";
+  const inputCls = "w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-sm text-text transition-colors focus:border-accent focus:ring-2 focus:ring-[var(--accent-muted)]";
   const labelCls = "mb-1 block text-xs font-medium text-muted";
 
   async function handleSave() {
@@ -129,8 +129,8 @@ function ExpandedBrokeredCard({ r, onCancel, onDone, onSaved }: { r: BrokeredRes
             <div><label className={labelCls}>Guest Phone</label><input className={inputCls} value={fields.guest_phone} onChange={e => setFields(f => ({...f, guest_phone: e.target.value}))} /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelCls}>Check-in</label><input type="date" className={`${inputCls} [color-scheme:dark]`} value={fields.check_in} onChange={e => setFields(f => ({...f, check_in: e.target.value}))} /></div>
-            <div><label className={labelCls}>Check-out</label><input type="date" className={`${inputCls} [color-scheme:dark]`} value={fields.check_out} onChange={e => setFields(f => ({...f, check_out: e.target.value}))} /></div>
+            <div className="overflow-hidden"><label className={labelCls}>Check-in</label><input type="date" className={`${inputCls} [color-scheme:dark]`} value={fields.check_in} onChange={e => setFields(f => ({...f, check_in: e.target.value}))} /></div>
+            <div className="overflow-hidden"><label className={labelCls}>Check-out</label><input type="date" className={`${inputCls} [color-scheme:dark]`} value={fields.check_out} onChange={e => setFields(f => ({...f, check_out: e.target.value}))} /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div><label className={labelCls}>Cost Price</label><input type="number" className={inputCls} value={fields.cost_price} onChange={e => setFields(f => ({...f, cost_price: e.target.value}))} /></div>
@@ -332,9 +332,7 @@ export default function BrokeredPage() {
 
           {/* Dates */}
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>{t("check_in")}</label>
+            <div className="space-y-3"><div><label className={labelClass}>{t("check_in")}</label>
                 <input type="date" value={checkIn} onChange={e => setCheckIn(e.target.value)} className={`${inputClass} [color-scheme:dark]`} />
               </div>
               <div>
@@ -510,4 +508,7 @@ export default function BrokeredPage() {
     </div>
   );
 }
+
+
+
 
